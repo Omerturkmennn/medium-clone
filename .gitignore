@@ -1,0 +1,14 @@
+# Python önbellek dosyaları (Gereksiz ağırlık yapar)
+__pycache__/
+*.pyc
+
+# Sanal ortam klasörümüz (Bunu GitHub'a atmayız, herkes kendi kurar)
+.venv/
+venv/
+env/
+
+# ÇEVRE DEĞİŞKENLERİ VE GİZLİ ŞİFRELER (BUNU ASLA GİTHUB'A ATMA!)
+.env
+
+# PyCharm IDE ayar dosyaları
+.idea/
