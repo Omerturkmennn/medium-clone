@@ -28,3 +28,6 @@ class User(Base):
     posts = relationship("Post", back_populates="author", cascade="all, delete-orphan")
 
     comments = relationship("Comment", back_populates="author")
+
+    #Kullanıcının yaptığı beğeniler
+    likes = relationship("Like", back_populates="user")

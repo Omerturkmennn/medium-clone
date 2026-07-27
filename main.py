@@ -3,7 +3,7 @@ from fastapi import FastAPI
 
 
 # Yazdığımız endpointleri içeren users dosyasını import
-from app.api.v1.endpoints import users,posts,comments
+from app.api.v1.endpoints import users,posts,comments,likes
 
 
 app = FastAPI(title="Medium Clone API",
@@ -19,6 +19,8 @@ app.include_router(posts.router, prefix="/api/v1/posts", tags=["Posts"])
 
 #Comments endpointlerini sisteme bağlıyoruz
 app.include_router(comments.router, prefix="/api/v1/comments", tags=["Comments"])
+
+app.include_router(likes.router, prefix="/api/v1/likes", tags=["Likes"])
 
 
 

@@ -9,6 +9,7 @@ from sqlalchemy import pool
 from alembic import context
 
 from app.models.comment import Comment
+from app.models.like import Like
 
 # 1. Proje ana dizinini Python path'ine ekliyoruz (app modülünü bulabilmesi için)
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
