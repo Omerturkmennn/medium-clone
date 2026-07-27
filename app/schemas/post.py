@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-
+from typing import Optional
 
 #Burdaki kurallar sayesinde API ye boş başlık veya hatalı veri gönderilmesini engellenecek
 

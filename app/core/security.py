@@ -7,7 +7,7 @@ from app.core.config import settings
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Kullanıcının girdiği düz şifre ile veritabanındaki hash'lenmiş şifreyi karşılaştırır."""
 
-    # HATA YAKALAYICI PRINT SATIRLARI (SİSTEMİN NE GÖRDÜĞÜNÜ ANLAMAK İÇİN)
+    # HATA YAKALAYICI PRINT SATIRLARI 
     print("\n" + "=" * 40)
     print(f"GELEN DUZ SIFRE: {plain_password}")
     print(f"VERITABANINDAN GELEN HASH: {hashed_password}")

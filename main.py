@@ -15,6 +15,8 @@ app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 
 app.include_router(posts.router, prefix="/api/v1/posts", tags=["Posts"])
 
+app
+
 # API'nin ayakta olup olmadığını kontrol edebilmek için ana dizine basit bir karşılama mesajı
 @app.get("/")
 def root():

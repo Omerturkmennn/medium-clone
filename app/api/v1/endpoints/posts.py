@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status,HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from typing import List
@@ -6,7 +6,7 @@ from typing import List
 from app.api.dependencies import get_db, get_current_user
 from app.models.post import Post
 from app.models.user import User
-from app.schemas.post import PostCreate, PostResponse
+from app.schemas.post import PostCreate, PostResponse,PostUpdate
 
 router = APIRouter()
 
@@ -72,3 +72,68 @@ def get_posts(
     posts = db.scalars(select(Post)).all()
 
     return posts
+
+#Makale güncelleme
+@router.put("/{post_id}", response_model=PostResponse)
+
+def update_post(
+        #URLden güncellenecek makalenin ID'sini al
+        post_id: str,
+
+        #kullanıcının gönderdiği yeni içerik verisi
+        post_in: PostUpdate,
+
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    """
+        Belirli bir makaleyi günceller.
+        YETKİ KONTROLÜ: Sadece makalenin sahibi (yazarı) güncelleyebilir.
+        """
+    #db de bize verilen id ye sahip makale var mı bakıyoruz
+    post=db.scalar(select(Post).where(Post.id == post_id))
+
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Makale bulunamadı")
+
+    #Güvenlik: Makaleyi yazan kişinin ID'si ile istek atan kişinin (token) ID'si aynı mı
+    if post.author_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Bu Makaleyi güncelleme yetkiniz yok")
+
+    #Kullanıcı sadece başlığı veya sadece içeriği değiştirmek isteyebilir.
+    # Hangisi Pydantic şemasından (post_in) dolu geldiyse onu güncelliyoruz.
+    if post_in.title is not None:
+        post.title = post_in.title
+    if post_in.content is not None:
+        post.content = post_in.content
+
+    db.commit()
+    db.refresh(post)
+    return post
+
+@router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(
+        post_id: str,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    """
+        Belirli bir makaleyi kalıcı olarak siler.
+        YETKİ KONTROLÜ: Sadece makalenin sahibi silebilir.
+        """
+    #silinecel makaleyi db den bul
+    post=db.scalar(select(Post).where(Post.id == post_id))
+
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Makale bulunamadı")
+
+    #silecek kişinin makalesi mi kontrolü
+    if post.author_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Bu Makaleyi silme yetkiniz yok!")
+
+    #makaleyi sil
+    db.delete(post)
+    db.commit()
+
+    #HTTP_204_NO_CONTENT kodu:işlem başarıyla yapıldı ama sana geri döndüreceğim bir veri (JSON) kalmadı demektir
+    return None
