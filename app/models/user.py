@@ -26,3 +26,5 @@ class User(Base):
 
     # Bir kullanıcı silindiğinde (cascade="all, delete-orphan"), onun yazdığı tüm yazılar da otomatik silinir
     posts = relationship("Post", back_populates="author", cascade="all, delete-orphan")
+
+    comments = relationship("Comment", back_populates="author")

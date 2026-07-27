@@ -25,3 +25,5 @@ class Post(Base):
     #  yazıyı çekerken post.author.username diyerek
     # o yazıyı yazan kişinin bilgilerine kolayca ulaşabileceğiz.
     author = relationship("User", back_populates="posts")
+
+    comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
