@@ -8,6 +8,7 @@ from app.api.dependencies import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
 from app.core.security import get_password_hash, verify_password, create_access_token
+from app.crud import crud_user
 
 #Bu router ileride main.py içine eklenecek ve bu dosyadaki tüm endpointleri yönetecek
 router = APIRouter()
@@ -28,28 +29,19 @@ def register(user_in:UserCreate, db: Session = Depends(get_db)):
         Şifreyi güvenli bir şekilde hash'leyerek veritabanına kaydeder.
         """
     #e-posta sistemde kayıtlı mı diye kontrol
-    user_by_email=db.scalar(select(User).where(User.email==user_in.email))
+    user_by_email=crud_user.get_user_by_email(db, email=user_in.email)
     if user_by_email:
         raise HTTPException(status_code=400,detail="Bu E-posta zaten kullanılıyor")
 
     #username sisteme kayıtlı mı kontrolü
-    user_by_username=db.scalar(select(User).where(User.username==user_in.username))
+    user_by_username=crud_user.get_user_by_username(db, username=user_in.username)
     if user_by_username:
         raise HTTPException(status_code=400,detail="Bu kullanıcı adı zaten alınmış")
 
     #kullanıcının girdiği şifreyi hashle
-    hashed_pw=get_password_hash(user_in.password)
-
     #db ye eklenecek kullanıcı nesnesi
-    new_user=User(
-        email=user_in.email,
-        username=user_in.username,
-        hashed_password=hashed_pw,
-        bio=user_in.bio,
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user) # ID, created_at gibi otomatik oluşan verileri nesneye geri yükle
+    # ID, created_at gibi otomatik oluşan verileri nesneye geri yükle
+    new_user = crud_user.create_user(db=db, user_in=user_in)
 
     return new_user
 
@@ -60,7 +52,7 @@ def login_user(user_in: UserLogin, db: Session = Depends(get_db)):
         Eğer doğruysa JWT formatında bir Access Token döndürür.
         """
     #Veritabanından, girilen e-posta adresine sahip kullanıcıyı buluyoruz
-    user=db.scalar(select(User).where(User.email==user_in.email))
+    user=crud_user.get_user_by_email(db, email=user_in.email)
 
     #Kullanıcı hiç yoksa veya şifresi (hashlenmiş haliyle) eşleşmiyorsa 401 hatası veriyoruz
     if not user or not verify_password(user_in.password, user.hashed_password):
