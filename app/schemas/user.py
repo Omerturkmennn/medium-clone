@@ -22,3 +22,8 @@ class UserResponse(UserBase):
 
     #SQLAlchemy modelini Pydantic modeline dönüştürebilmek için
     model_config = ConfigDict(from_attributes=True)
+
+class UserUpdate(BaseModel):
+    username:Optional[str]=None
+    email:Optional[str]=None
+    bio:Optional[str]=None

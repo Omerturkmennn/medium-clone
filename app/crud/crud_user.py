@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
+from app.schemas.user import UserUpdate
 from app.models.user import User
 from app.schemas.user import UserCreate
 from app.core.security import get_password_hash
@@ -36,4 +37,18 @@ def create_user(db: Session, user_in: UserCreate) -> User:
     db.commit()
     db.refresh(db_user)
 
+    return db_user
+
+def update_user(db:Session,db_user: User,user_in: UserUpdate) -> User:
+    """"Mevcut Kullanıcının Profil Bilgilerini Günceller"""
+    if user_in.username is not None:
+        db_user.username = user_in.username
+    if user_in.email is not None:
+        db_user.email = user_in.email
+    if user_in.bio is not None:
+        db_user.bio = user_in.bio
+
+
+    db.commit()
+    db.refresh(db_user)
     return db_user

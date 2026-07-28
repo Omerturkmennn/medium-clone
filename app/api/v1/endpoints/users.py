@@ -4,9 +4,9 @@ from sqlalchemy import select
 from pydantic import BaseModel
 
 # Yazdığımız veritabanı bağlantısı ve güvenlik fonksiyonlarını içeri alıyoruz
-from app.api.dependencies import get_db
+from app.api.dependencies import get_db,get_current_user
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse
+from app.schemas.user import UserCreate, UserResponse,UserUpdate
 from app.core.security import get_password_hash, verify_password, create_access_token
 from app.crud import crud_user
 
@@ -69,3 +69,22 @@ def login_user(user_in: UserLogin, db: Session = Depends(get_db)):
         "access_token": access_token,
         "token_type": "bearer"
     }
+
+@router.put("/me",response_model=UserResponse)
+def update_profile(user_in: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+        Giriş yapmış kullanıcının KENDİ profil bilgilerini günceller.
+        Token kime aitse, onun bilgileri değişir.
+        """
+    #kullanıcı mail değiştirmek istiyosa o mail başkasına ait mi değil mi kontrolu
+    if  user_in.email and user_in.email != current_user.email:
+        if crud_user.get_user_by_email(db, email=user_in.email):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Bu email bir başkası tarafından kullanılıyor")
+
+    #kullanıcı username değiştirmek istiyoken bu username başkasına ait mi kontrolü
+    if user_in.username and user_in.username != current_user.username:
+        if crud_user.get_user_by_username(db, username=user_in.username):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Bu kullanıcı adı zaten alınmış")
+
+    updated_user=crud_user.update_user(db=db,db_user=current_user,user_in=user_in)
+    return updated_user

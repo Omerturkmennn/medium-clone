@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List,Optional
 
 from app.api.dependencies import get_db, get_current_user
 from app.models.user import User
@@ -54,14 +54,21 @@ def get_posts(
         #  'current_user = Depends(...)' kısmını bilerek eklemedik
         # Çünkü makaleleri herkes okuyabilir, giriş yapmaya (token'a) gerek yoktur.
         db: Session = Depends(get_db),
+
+        skip: int = 0,
+        limit: int = 10,
+        search:Optional[str]=""
 ):
     """
-        Sistemdeki tüm makaleleri liste halinde döndürür.
-        Herkese açık Endpoint
-        """
+            Sistemdeki makaleleri liste halinde döndürür.
+            - **skip**: Kaç makale atlanacak (Örn: 2. sayfa için 10 gönderilir)
+            - **limit**: Sayfada maksimum kaç makale gösterilecek
+            - **search**: Makale başlıklarında kelime araması yapar
+            Herkese açık Endpoint
+            """
     # Veritabanındaki Post tablosuna gidip tüm satırları çeken SQL sorgusunu çalıştırıyoruz.
     # scalars() -> veritabanından gelen karmaşık satırları temiz, tek boyutlu bir liste yapar
-    posts = crud_post.get_posts(db=db)
+    posts = crud_post.get_posts(db=db,skip=skip,limit=limit,search=search)
 
     return posts
 
