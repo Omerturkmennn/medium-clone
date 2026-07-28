@@ -4,6 +4,8 @@ from sqlalchemy.sql import func
 from app.database.database import Base
 from sqlalchemy.orm import relationship
 
+from app.models.follow import Follow
+
 
 class User(Base):
     __tablename__ = "users"
@@ -31,3 +33,19 @@ class User(Base):
 
     #Kullanıcının yaptığı beğeniler
     likes = relationship("Like", back_populates="user")
+
+    #Kullanıcının takip ettikleri (Kimi takip ediyor)
+    following = relationship(
+        "Follow",
+        foreign_keys="[Follow.follower_id]",
+        back_populates="follower_user",
+        cascade="all, delete-orphan"
+    )
+
+    #Kullanıcının takipçileri (Onu kim takip ediyor)
+    followers = relationship(
+        "Follow",
+        foreign_keys="[Follow.following_id]",
+        back_populates="following_user",
+        cascade="all, delete-orphan"
+    )

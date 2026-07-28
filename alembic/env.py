@@ -2,6 +2,7 @@ import os
 import sys
 from logging.config import fileConfig
 from dotenv import load_dotenv
+from app.models.follow import Follow
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
