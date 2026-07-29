@@ -4,16 +4,32 @@ from app.models.post import Post
 from app.models.follow import Follow
 from app.schemas.post import PostCreate, PostUpdate
 from app.models.tag import Tag
+import re
+import unicodedata
+
+def generate_slug(title: str) -> str:
+    """Başlığı SEO dostu bir URL formatına (slug) çevirir."""
+    # 1. Türkçe karakterleri (ş, ğ, ü, ö, ç, ı) İngilizce karşılıklarına dönüştür
+    text = unicodedata.normalize('NFKD', title).encode('ascii', 'ignore').decode('utf-8')
+    # 2. Harf, rakam, boşluk ve tire DIŞINDAKİ tüm özel karakterleri sil
+    text = re.sub(r'[^\w\s-]', '', text.lower())
+    # 3. Birden fazla boşluğu veya tireyi tek bir tireye (-) dönüştür
+    return re.sub(r'[-\s]+', '-', text).strip('-')
+
+
+
+
 
 def get_post_by_id(db: Session, post_id: str) -> Post | None:
     """ID'ye göre veritabanından tek bir makale getirir."""
     return db.scalar(select(Post).where(Post.id == post_id))
 
+
 def get_posts(db: Session,skip: int = 0, limit: int = 10,search:str="",tag:str=None):
     """Tüm makaleleri sayfalama ve arama filtreleriyle çeker."""
 
     #temel sorguyu başlat
-    query=select(Post)
+    query = select(Post).where(Post.status == "published")
 
     #Eğer kullanıcı bir arama kelimesi gönderdiyse filtrele
     if search:
@@ -31,13 +47,32 @@ def get_posts(db: Session,skip: int = 0, limit: int = 10,search:str="",tag:str=N
      #Sorguyu çalıştır ve döndür
     return db.scalars(query).all()
 
+def get_post_by_slug(db: Session, slug: str) -> Post:
+    """Makaleyi URL'deki slug'ına göre getirir."""
+    return db.scalar(select(Post).where(Post.slug == slug))
+
 
 def create_post(db: Session, post_in: PostCreate, author_id: str) -> Post:
-    """Yeni makaleyi veritabanına kaydeder."""
+    """Yeni makaleyi veritabanına kaydeder, otomatik slug üretir ve etiketleri bağlar."""
+
+    #SLUG ÜRETİMİ VE ÇAKIŞMA KONTROLÜ
+    base_slug = generate_slug(post_in.title)
+    unique_slug = base_slug
+    counter = 1
+
+    # Veritabanında bu slug'dan zaten var mı diye bak (Örn: "ilk-makalem")
+    # Varsa sonuna rakam ekleyerek tekrar dene (Örn: "ilk-makalem-1", "ilk-makalem-2")
+    while db.scalar(select(Post).where(Post.slug == unique_slug)):
+        unique_slug = f"{base_slug}-{counter}"
+        counter += 1
+
+
     new_post = Post(
         title=post_in.title,
         content=post_in.content,
-        author_id=author_id
+        author_id=author_id,
+        status=post_in.status,
+        slug=unique_slug,
     )
     #Tag işlemleri
     if post_in.tags:

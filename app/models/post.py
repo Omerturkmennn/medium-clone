@@ -2,8 +2,12 @@ from sqlalchemy import Column, String, Text, ForeignKey, DateTime, func
 from sqlalchemy.orm import relationship
 import uuid
 
+
 # Veritabanı ana sınıfımız (alembic in tanıdığı Base)
 from app.database.database import Base
+from app.schemas.post import PostStatus
+
+
 
 class Post(Base):
     __tablename__ = "posts"
@@ -33,3 +37,8 @@ class Post(Base):
 
     #makale etiketlerini çekecek ilişki
     tags = relationship("Tag", secondary="post_tag", back_populates="posts")
+
+    status=Column(String, nullable=False,default="draft")
+
+    #URL'de görünecek olan slug sütunu. Hızlı arama için index=True, çakışmaması için unique=True yapıldı
+    slug = Column(String, unique=True, index=True, nullable=True)

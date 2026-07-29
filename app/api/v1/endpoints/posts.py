@@ -92,6 +92,19 @@ def get_get_user_feed(
 
     return feed_posts
 
+@router.get("/{slug}", response_model=PostResponse)
+def get_post(slug:str, db: Session = Depends(get_db)):
+    """
+        Belirli bir makaleyi ID yerine Slug ile getirir.
+        Örn: /posts/benim-ilk-makalem
+        """
+    post=crud_post.get_post_by_slug(db=db, slug=slug)
+
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Makale bulunamadı")
+
+    return post
+
 
 # Makale güncelleme
 @router.put("/{post_id}", response_model=PostResponse)
