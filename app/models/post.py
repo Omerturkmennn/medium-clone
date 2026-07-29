@@ -30,3 +30,6 @@ class Post(Base):
 
     # Makaleye gelen beğeniler 
     likes = relationship("Like", back_populates="post", cascade="all, delete-orphan")
+
+    #makale etiketlerini çekecek ilişki
+    tags = relationship("Tag", secondary="post_tag", back_populates="posts")

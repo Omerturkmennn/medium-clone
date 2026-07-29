@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
+from app.schemas.tag import TagResponse
 
 #Burdaki kurallar sayesinde API ye boş başlık veya hatalı veri gönderilmesini engellenecek
 
@@ -9,11 +10,13 @@ from typing import Optional
 class PostCreate(BaseModel):
     title: str
     content: str
+    tags:Optional[List[str]] = []
 
 #yazı güncellenirken başlık veya içerik opsiyonel olabilri
 class PostUpdate(BaseModel):
-    title: str | None= None
-    content: str | None= None
+    title: Optional[str] = None
+    content: Optional[str] = None
+    tags: Optional[List[str]] = None
 
 # API'den dışarıya (Frontende) yazı bilgilerini gönderirken kullanacağımız şema
 class PostResponse(BaseModel):
@@ -23,6 +26,7 @@ class PostResponse(BaseModel):
     author_id: str
     created_at: datetime
     updated_at: datetime
+    tags: List[TagResponse]=[]
 
     # Alchemy modelini Pydantice dönüştürmek için gereken ayar
     model_config = ConfigDict(from_attributes=True)

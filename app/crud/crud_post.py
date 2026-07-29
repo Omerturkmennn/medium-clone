@@ -3,12 +3,13 @@ from sqlalchemy import select
 from app.models.post import Post
 from app.models.follow import Follow
 from app.schemas.post import PostCreate, PostUpdate
+from app.models.tag import Tag
 
 def get_post_by_id(db: Session, post_id: str) -> Post | None:
     """ID'ye göre veritabanından tek bir makale getirir."""
     return db.scalar(select(Post).where(Post.id == post_id))
 
-def get_posts(db: Session,skip: int = 0, limit: int = 10,search:str=""):
+def get_posts(db: Session,skip: int = 0, limit: int = 10,search:str="",tag:str=None):
     """Tüm makaleleri sayfalama ve arama filtreleriyle çeker."""
 
     #temel sorguyu başlat
@@ -20,11 +21,15 @@ def get_posts(db: Session,skip: int = 0, limit: int = 10,search:str=""):
         # f"%{search}%": Kelimenin başında veya sonunda başka harfler de olabilir demek
         query = query.where(Post.title.ilike(f"%{search}%"))
 
-        #Sayfalama ayarlarını ekle ve en yeniden en eskiye sırala
-        query = query.offset(skip).limit(limit).order_by(Post.created_at.desc())
+    if tag:
+        clean_tag = tag.strip().lower()
+        query = query.where(Post.tags.any(Tag.name == clean_tag))
 
-        #Sorguyu çalıştır ve döndür
-        return db.scalars(query).all()
+    #Sayfalama ayarlarını ekle ve en yeniden en eskiye sırala
+    query = query.offset(skip).limit(limit).order_by(Post.created_at.desc())
+
+     #Sorguyu çalıştır ve döndür
+    return db.scalars(query).all()
 
 
 def create_post(db: Session, post_in: PostCreate, author_id: str) -> Post:
@@ -34,6 +39,21 @@ def create_post(db: Session, post_in: PostCreate, author_id: str) -> Post:
         content=post_in.content,
         author_id=author_id
     )
+    #Tag işlemleri
+    if post_in.tags:
+        for tag_name in post_in.tags:
+            # Kullanıcının gönderdiği kelimeyi küçük harfe çevirip boşluklarını temizle
+            clean_tag_name = tag_name.lower().strip()
+            #böyle bir etiket var mı bak
+            existing_tag=db.scalar(select(Tag).where(Tag.name == clean_tag_name))
+            if existing_tag:
+                #varsa mevcut etiketi makaleye ekle
+                new_post.tags.append(existing_tag)
+                #yoksa yenisini oluştur ve makaleye ekle
+            else:
+                new_tag=Tag(name=clean_tag_name)
+                new_post.tags.append(new_tag)
+
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
@@ -45,6 +65,23 @@ def update_post(db: Session, db_post: Post, post_in: PostUpdate) -> Post:
         db_post.title = post_in.title
     if post_in.content is not None:
         db_post.content = post_in.content
+
+    #tag güncelleme mantığı
+    # Eğer kullanıcı 'tags' alanı gönderdiyse (boş liste [] bile gönderse bu if çalışır)
+    if post_in.tags is not None:
+        #önce makalenin mevcut etiketlerini temizle
+        db_post.tags.clear()
+
+        #sonra yeni gönderilenleri tek tek ekle
+        for tag_name in post_in.tags:
+            clean_tag_name = tag_name.lower().strip()
+            existing_tag=db.scalar(select(Tag).where(Tag.name == clean_tag_name))
+
+            if existing_tag:
+                db_post.tags.append(existing_tag)
+            else:
+                new_tag=Tag(name=clean_tag_name)
+                db_post.tags.append(new_tag)
 
     db.commit()
     db.refresh(db_post)

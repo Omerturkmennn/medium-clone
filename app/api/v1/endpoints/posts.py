@@ -57,7 +57,8 @@ def get_posts(
 
         skip: int = 0,
         limit: int = 10,
-        search:Optional[str]=""
+        search:Optional[str]="",
+        tag:Optional[str]=None
 ):
     """
             Sistemdeki makaleleri liste halinde döndürür.
@@ -68,7 +69,7 @@ def get_posts(
             """
     # Veritabanındaki Post tablosuna gidip tüm satırları çeken SQL sorgusunu çalıştırıyoruz.
     # scalars() -> veritabanından gelen karmaşık satırları temiz, tek boyutlu bir liste yapar
-    posts = crud_post.get_posts(db=db,skip=skip,limit=limit,search=search)
+    posts = crud_post.get_posts(db=db,skip=skip,limit=limit,search=search,tag=tag)
 
     return posts
 
