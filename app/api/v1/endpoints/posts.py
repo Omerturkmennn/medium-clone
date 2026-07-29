@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException,File, UploadFile
 from sqlalchemy.orm import Session
 from typing import List,Optional
+import shutil #Dosya kopyalamak için
+import uuid #benzersiz dosya isimleri üretmek için
 
 from app.api.dependencies import get_db, get_current_user
 from app.models.user import User
@@ -137,6 +139,58 @@ def update_post(
     post = crud_post.update_post(db=db, db_post=post, post_in=post_in)
 
     return post
+
+#dosya kaydetmek için endpoint
+@router.post("/{post_id}/image}",response_model=PostResponse)
+def upload_post_cover_image(
+        post_id: str,
+        #kullanıcıdan "file" adında dosya bekliyoruz
+        file:UploadFile = File(...),
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    """
+        Belirli bir makaleye kapak fotoğrafı yükler.
+        Sadece makalenin yazarı bu işlemi yapabilir.
+        """
+    #Makaleyi veritabanından bul
+    post=crud_post.get_post_by_id(db, post_id=post_id)
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Makale bulunamadı")
+
+    #yetki kontrolu,yüklemeyi yapan kişi makale sahibi mi
+    if post.author_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Sadece kendi makalelerinize fotoğraf yükleyebilirsin ")
+
+    #Dosya adını benzersiz yap (Örn: kapak.jpg yerine 5f3a2b...c1.jpg olacak)
+    #Aynı isimde iki dosya yüklenirse birbirini ezmesin diye
+    file_extension = file.filename.split(".")[-1]
+    unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+
+    #Dosyanın sunucuda kaydedileceği fiziksel yol
+    file_location = f"uploads/{unique_filename}"
+
+    #Dosyayı 'uploads' klasörüne fiziksel olarak kaydet (shutil ile)
+    with open(file_location, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    #Veritabanını güncelle: Makalenin cover_image sütununa statik URL'yi yaz
+    post.cover_image = f"/static/{unique_filename}"
+    db.commit()
+    db.refresh(post)
+
+    return post
+
+
+
+
+
+
+
+
+
+
+
 
 
 @router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)

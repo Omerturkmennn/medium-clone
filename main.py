@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+import os
 
 
 
@@ -9,6 +11,12 @@ from app.api.v1.endpoints import users,posts,comments,likes,followers
 app = FastAPI(title="Medium Clone API",
               description="API for medium clone",
               version="1.0.0",)
+
+#Eğer 'uploads' klasörü yoksa kod patlamasın, otomatik oluştursun
+os.makedirs("uploads", exist_ok=True)
+
+#Tarayıcıdan '/static/profil.jpg' diye bir istek gelirse, git bunu 'uploads' klasöründe ara
+app.mount("/static", StaticFiles(directory="uploads"), name="static")
 
 # Yazdılan users.py dosyasındaki tüm işlemleri ana uygulamaya bağlanıyor
 # prefix="/api/v1/users" sayesinde users.py içindeki /register adresi aslında

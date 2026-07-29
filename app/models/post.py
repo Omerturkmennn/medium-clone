@@ -42,3 +42,6 @@ class Post(Base):
 
     #URL'de görünecek olan slug sütunu. Hızlı arama için index=True, çakışmaması için unique=True yapıldı
     slug = Column(String, unique=True, index=True, nullable=True)
+
+    #Makalenin kapak fotoğrafı yolu
+    cover_image = Column(String, nullable=True)

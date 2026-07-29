@@ -37,6 +37,7 @@ class PostResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     tags: List[TagResponse]=[]
+    cover_image:Optional[str]=None
 
     # Alchemy modelini Pydantice dönüştürmek için gereken ayar
     model_config = ConfigDict(from_attributes=True)
