@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict,computed_field
 from datetime import datetime
 from typing import Optional, List
 from app.schemas.tag import TagResponse
@@ -39,5 +39,27 @@ class PostResponse(BaseModel):
     tags: List[TagResponse]=[]
     cover_image:Optional[str]=None
 
+
     # Alchemy modelini Pydantice dönüştürmek için gereken ayar
     model_config = ConfigDict(from_attributes=True)
+
+    #Dinamik okuma süresi hesaplama
+    @computed_field
+    @property
+
+    def read_time(self)->int:
+        """
+                Makalenin içeriğindeki kelime sayısını hesaplar ve
+                ortalama okuma hızına (200 kelime/dk) bölerek tahmini süreyi döndürür.
+                """
+        if not self.content:
+            return 1
+
+        # İçeriği boşluklardan bölerek kelime listesi oluştur ve sayısını al
+        word_count = len(self.content.split())
+
+        #200 e böl ve en yakın tam sayıya yuvarla
+        minutes=round(word_count/200)
+
+        #Makale çok kısaysa bile en az 1 dakika okuma süresi dönsün
+        return max(1, minutes)
