@@ -4,8 +4,8 @@ import os
 
 
 
-# Yazdığımız endpointleri içeren users dosyasını import
-from app.api.v1.endpoints import users,posts,comments,likes,followers
+# Yazdığım endpointleri içeren  importlar
+from app.api.v1.endpoints import users,posts,comments,likes,followers,bookmarks,ws
 
 
 app = FastAPI(title="Medium Clone API",
@@ -25,12 +25,16 @@ app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 
 app.include_router(posts.router, prefix="/api/v1/posts", tags=["Posts"])
 
-#Comments endpointlerini sisteme bağlıyoruz
+
 app.include_router(comments.router, prefix="/api/v1/comments", tags=["Comments"])
 
 app.include_router(likes.router, prefix="/api/v1/likes", tags=["Likes"])
 
 app.include_router(followers.router, prefix="/api/v1/followers", tags=["Followers"])
+
+app.include_router(bookmarks.router, prefix="/bookmarks", tags=["bookmarks"])
+
+app.include_router(ws.router, prefix="/ws", tags=["websockets"])
 
 
 # API'nin ayakta olup olmadığını kontrol edebilmek için ana dizine basit bir karşılama mesajı
