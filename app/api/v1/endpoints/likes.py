@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException,BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List
-
+from app.websockets.manager import manager
 from app.api.dependencies import get_db, get_current_user
 from app.models.user import User
 from app.schemas.like import LikeResponse
@@ -15,6 +15,7 @@ router = APIRouter()
 @router.post("/post/{post_id}",response_model=LikeResponse,status_code=status.HTTP_201_CREATED)
 def like_post(
         post_id: str,
+        background_tasks: BackgroundTasks,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user),
 ):
@@ -34,6 +35,17 @@ def like_post(
 
     #her şey yolundaysa beğeniyi oluştur
     new_like = crud_like.create_like(db=db, post_id=post_id, user_id=current_user.id)
+
+    #kendi makalesini beğenmediyse bildirim yolla
+    if post.author_id != current_user.id:
+        notification = {
+            "type": "new_like",
+            "post_id": post_id,
+            "message": "Birisi makaleni beğendi!"
+        }
+        background_tasks.add_task(manager.send_personal_message, notification, post.author_id)
+
+
     return new_like
 
 @router.delete("/post/{post_id}",status_code=status.HTTP_204_NO_CONTENT)

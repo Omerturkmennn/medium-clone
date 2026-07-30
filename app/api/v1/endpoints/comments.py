@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException,BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List
 
 from app.api.dependencies import get_db, get_current_user
 from app.models.user import User
 from app.schemas.comment import CommentCreate, CommentResponse, CommentUpdate
+from app.websockets.manager import manager
 
 from app.crud import crud_comment, crud_post
 
@@ -16,6 +17,7 @@ router = APIRouter()
 def create_comment(
         post_id: str,  # Hangi makaleye yorum yapıldığını URL'den alıyoruz
         comment_in: CommentCreate,
+        background_tasks: BackgroundTasks,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)  # Yorum yapan kişi tokendan geliyor
 ):
@@ -31,6 +33,17 @@ def create_comment(
 
     # Yorum nesnesini oluştur ve tüm bağlantıları (ilişkileri) kur
     new_comment = crud_comment.create_comment(db=db, comment_in=comment_in, post_id=post_id, author_id=current_user.id)
+
+    #yorum yapan kişi makale sahibi değilse bildirim gönder
+    if post.author_id != current_user.id:
+        notification = {
+            "type": "new_comment",
+            "post_id": post_id,
+            "message": "Makalene yeni bir yorum yapıldı!"
+        }
+        # İşlemi arka plana atıyoruz (manager.send_personal_message fonksiyonunu hedef kullanıcı ID'si ile çağırır)
+        background_tasks.add_task(manager.send_personal_message, notification, post.author_id)
+
     return new_comment
 
 

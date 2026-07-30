@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Medium Klon Bildirim Testi</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        #messages { margin-top: 20px; border: 1px solid #ccc; padding: 10px; min-height: 100px; background: #f9f9f9;}
+        .notification { color: green; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+    </style>
+</head>
+<body>
+    <h2>WebSocket Test Ekranı</h2>
+    <p>Bağlanacak Yazarın ID'sini girin:</p>
+
+    <input type="text" id="userId" placeholder="Yazar ID'si..." size="40">
+    <button onclick="connect()">Kanalı Aç (Bağlan)</button>
+
+    <h3>Gelen Bildirimler:</h3>
+    <div id="messages">Kanal açıldığında bildirimler buraya düşecek...</div>
+
+    <script>
+        let ws;
+        function connect() {
+            const userId = document.getElementById("userId").value;
+            if(!userId) return alert("Lütfen bir ID girin!");
+
+            // DİKKAT: Ana router prefix'inde /api/v1 varsa adresi ona göre güncelle: ws://localhost:8000/api/v1/ws/...
+            ws = new WebSocket("ws://localhost:8000/ws/" + userId);
+
+            ws.onopen = function() {
+                document.getElementById("messages").innerHTML = "<div style='color:blue;'>Bağlantı kuruldu. Bildirim bekleniyor...</div>";
+            };
+
+            ws.onmessage = function(event) {
+                const messagesDiv = document.getElementById("messages");
+                // Gelen JSON verisini ekrana yazdırıyoruz
+                messagesDiv.innerHTML += `<div class="notification">🚀 YENİ BİLDİRİM: ${event.data}</div>`;
+            };
+
+            ws.onclose = function() {
+                document.getElementById("messages").innerHTML += "<div style='color:red;'>Bağlantı koptu.</div>";
+            };
+        }
+    </script>
+</body>
+</html>

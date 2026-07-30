@@ -1,6 +1,6 @@
 from fastapi import WebSocket
 
-class ConnectionManager(WebSocket):
+class ConnectionManager:
     def __init__(self):
         # Hangi kullanıcının  hangi WebSocket bağlantılarına sahip olduğunu tutarız
         # Bir kullanıcı aynı anda hem telefondan hem bilgisayardan bağlı olabilir,
