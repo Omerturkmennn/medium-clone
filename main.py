@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 import os
+from fastapi.middleware.cors import CORSMiddleware
 
 
 
@@ -11,6 +12,24 @@ from app.api.v1.endpoints import users,posts,comments,likes,followers,bookmarks,
 app = FastAPI(title="Medium Clone API",
               description="API for medium clone",
               version="1.0.0",)
+
+#CORS ayarları
+# Frontend'in hangi adreslerden istek atabileceğini belirliyoruz
+origins = [
+    "http://localhost:3000", # React, Vue, Next.js vb. için
+    "http://localhost:5173", # Vite için
+    "http://127.0.0.1:5500", # VS Code Live Server için
+    "*" # Dikkat: Geliştirme aşamasında kolaylık olsun diye tüm adreslere izin veriyoruz. Canlıya alırken bu satırı kaldırılmalı.
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,       # İzin verilen kaynaklar (origin)
+    allow_credentials=True,      # Cookie veya Authorization başlıklarına izin ver
+    allow_methods=["*"],         # GET, POST, PUT, DELETE vb. tüm HTTP metotlarına izin ver
+    allow_headers=["*"],         # Gelen tüm header'lara izin ver
+)
+
 
 #Eğer 'uploads' klasörü yoksa kod patlamasın, otomatik oluştursun
 os.makedirs("uploads", exist_ok=True)

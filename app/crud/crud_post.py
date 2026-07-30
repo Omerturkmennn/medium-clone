@@ -25,7 +25,8 @@ def get_post_by_id(db: Session, post_id: str) -> Post | None:
     return db.scalar(select(Post).where(Post.id == post_id))
 
 
-def get_posts(db: Session,skip: int = 0, limit: int = 10,search:str="",tag:str=None):
+
+def get_posts(db: Session,skip: int = 0, limit: int = 10,search:str="",tag:str=None,author_username:str=None):
     """Tüm makaleleri sayfalama ve arama filtreleriyle çeker."""
 
     #temel sorguyu başlat
@@ -40,6 +41,14 @@ def get_posts(db: Session,skip: int = 0, limit: int = 10,search:str="",tag:str=N
     if tag:
         clean_tag = tag.strip().lower()
         query = query.where(Post.tags.any(Tag.name == clean_tag))
+
+    #yazara göre filtreleme
+    # Eğer dışarıdan bir yazar kullanıcı adı (author_username) gönderilmişse, sorguyu ona göre daraltıyoruz.
+    # Post modelindeki 'author' ilişkisini (relationship) kullanarak User modeline ulaşıyor ve username'i kontrol ediyoruz.
+    if author_username:
+           query = query.where(Post.author.has(username=author_username))
+
+
 
     #Sayfalama ayarlarını ekle ve en yeniden en eskiye sırala
     query = query.offset(skip).limit(limit).order_by(Post.created_at.desc())
@@ -141,3 +150,16 @@ def get_feed_posts(db: Session, user_id: str):
         .where(Post.author_id.in_(following_ids))
         .order_by(Post.created_at.desc())
     ).all()
+
+
+def get_user_drafts(db: Session, user_id: str,skip: int = 0, limit: int = 10):
+    """giriş yapan kullanıcının taslaklarını getir(draft)"""
+    return db.scalars(
+        select(Post)
+        .where(Post.author_id == user_id, Post.status == "draft")
+        .order_by(Post.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+    ).all()
+
+

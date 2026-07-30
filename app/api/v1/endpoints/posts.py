@@ -60,18 +60,28 @@ def get_posts(
         skip: int = 0,
         limit: int = 10,
         search:Optional[str]="",
-        tag:Optional[str]=None
+        tag:Optional[str]=None,
+        author_username:Optional[str]=None
 ):
     """
             Sistemdeki makaleleri liste halinde döndürür.
             - **skip**: Kaç makale atlanacak (Örn: 2. sayfa için 10 gönderilir)
             - **limit**: Sayfada maksimum kaç makale gösterilecek
             - **search**: Makale başlıklarında kelime araması yapar
+            - **tag**: Belirli bir etikete (kategoriye) sahip makaleleri filtreler
+            - **author_username**: Sadece belirli bir yazarın makalelerini filtreler
             Herkese açık Endpoint
             """
     # Veritabanındaki Post tablosuna gidip tüm satırları çeken SQL sorgusunu çalıştırıyoruz.
     # scalars() -> veritabanından gelen karmaşık satırları temiz, tek boyutlu bir liste yapar
-    posts = crud_post.get_posts(db=db,skip=skip,limit=limit,search=search,tag=tag)
+    posts = crud_post.get_posts(
+        db=db,
+        skip=skip,
+        limit=limit,
+        search=search,
+        tag=tag,
+        author_username=author_username
+    )
 
     return posts
 
@@ -93,6 +103,21 @@ def get_get_user_feed(
     feed_posts = crud_post.get_feed_posts(db=db, user_id=current_user.id)
 
     return feed_posts
+
+@router.get("/me/drafts",response_model=List[PostResponse])
+def get_my_drafts(
+        skip: int = 0,
+        limit: int = 10,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    """
+        Giriş yapan kullanıcının henüz yayınlamadığı (taslak/draft) makalelerini listeler.
+        Sadece kullanıcının kendisi görebilir.
+        """
+    drafts=crud_post.get_user_drafts(db=db, user_id=current_user.id,skip=skip,limit=limit)
+    return drafts
+
 
 @router.get("/{slug}", response_model=PostResponse)
 def get_post(slug:str, db: Session = Depends(get_db)):
@@ -180,16 +205,6 @@ def upload_post_cover_image(
     db.refresh(post)
 
     return post
-
-
-
-
-
-
-
-
-
-
 
 
 
