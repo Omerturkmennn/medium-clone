@@ -3,6 +3,9 @@ from fastapi.staticfiles import StaticFiles
 import os
 from fastapi.middleware.cors import CORSMiddleware
 
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from app.core.rate_limit import limiter
 
 
 # Yazdığım endpointleri içeren  importlar
@@ -36,6 +39,11 @@ os.makedirs("uploads", exist_ok=True)
 
 #Tarayıcıdan '/static/profil.jpg' diye bir istek gelirse, git bunu 'uploads' klasöründe ara
 app.mount("/static", StaticFiles(directory="uploads"), name="static")
+
+#Limiter nesnesini FastAPI uygulamasına  bağlıyoruz
+app.state.limiter = limiter
+# Kota aşıldığında uygulamanın çökmesi yerine düzgün bir hata (429 Too Many Requests) dönmesini sağlıyoruz
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Yazdılan users.py dosyasındaki tüm işlemleri ana uygulamaya bağlanıyor
 # prefix="/api/v1/users" sayesinde users.py içindeki /register adresi aslında

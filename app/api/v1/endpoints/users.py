@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status,Request
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from pydantic import BaseModel
@@ -9,6 +9,7 @@ from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse,UserUpdate
 from app.core.security import get_password_hash, verify_password, create_access_token
 from app.crud import crud_user
+from app.core.rate_limit import limiter
 
 #Bu router ileride main.py içine eklenecek ve bu dosyadaki tüm endpointleri yönetecek
 router = APIRouter()
@@ -22,7 +23,8 @@ class UserLogin(BaseModel):
 # Kayıt olma endpointi
 # response_model=UserResponse ile dışarıya şifreyi değil sadece profil bilgilerini dönüyoruz
 @router.post("/register",response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def register(user_in:UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")   # Bu IP den dakikada en fazla 5 kayıt isteği gelebilir
+def register(request:Request,user_in:UserCreate, db: Session = Depends(get_db)):
     """
         Yeni bir kullanıcı oluşturur.
         Girilen e-posta veya kullanıcı adı sistemde varsa hata döndürür.
@@ -46,7 +48,8 @@ def register(user_in:UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 @router.post("/login")
-def login_user(user_in: UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("10/minute") #bu IP den dakikada en fazla 10 istek gelebilir
+def login_user(request:Request,user_in: UserLogin, db: Session = Depends(get_db)):
     """
         Kullanıcının e-posta ve şifresini kontrol eder.
         Eğer doğruysa JWT formatında bir Access Token döndürür.
