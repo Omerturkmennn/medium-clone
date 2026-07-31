@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status,Request
+import credentials
+from fastapi import APIRouter, Depends, HTTPException, status,Request,Body
 from sqlalchemy.orm import Session
 from app.schemas.stats import UserStatsResponse
 from app.crud import crud_stats, crud_user
 from sqlalchemy import select
 from pydantic import BaseModel
+import jwt
+from app.core import security
 
 # Yazdığımız veritabanı bağlantısı ve güvenlik fonksiyonlarını içeri alıyoruz
 from app.api.dependencies import get_db,get_current_user
@@ -69,9 +72,12 @@ def login_user(request:Request,user_in: UserLogin, db: Session = Depends(get_db)
 
     access_token = create_access_token(data=token_data)
 
+    refresh_token = security.create_refresh_token(data=token_data)
+
     #frontendin tokeni alıp kullanabilmesi için json
     return {
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer"
     }
 
@@ -108,3 +114,51 @@ def get_user_stats(username: str, db: Session = Depends(get_db)):
     #istatistikleri hesapla ve döndür
     stats=crud_stats.get_user_statistics(db=db,user_id=user.id)
     return stats
+
+@router.post("/refresh")
+def refresh_access_token(
+    refresh_token: str = Body(..., embed=True),
+    db: Session = Depends(get_db)
+):
+    """
+        Süresi dolan access_token'ı yenilemek için kullanılır.
+        Geçerli bir refresh_token gönderildiğinde yeni bir access_token ve refresh_token döner.
+        """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Geçersiz veya süresi dolmuş refresh token",
+    )
+
+    try:
+        #tokeni çöz ve içindeki paylodı al(veriler)
+        payload=jwt.decode(
+            refresh_token,
+            security.settings.SECRET_KEY,
+            algorithms=[security.settings.ALGORITHM]
+        )
+        user_id: str = payload.get("sub")
+        token_type: str = payload.get("type")
+
+        #içinde kullanıcı id si yoksa veya tipi refresh değilse reddet
+        if user_id is None or token_type != "refresh":
+            raise credentials_exception
+
+    except Exception:
+        #token bozuksa veya süresi dolmuşsa hata fırlatır
+        raise credentials_exception
+
+    #kullanıcı hala db de mi bak
+    user=db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise credentials_exception
+
+    #her şey tamamsa acces ve refresh üret
+    token_data={"sub": str(user.id)}
+    new_access_token = security.create_access_token(data=token_data)
+    new_refresh_token = security.create_refresh_token(data=token_data)
+
+    return {
+        "access_token": new_access_token,
+        "refresh_token": new_refresh_token,
+        "token_type": "bearer"
+    }

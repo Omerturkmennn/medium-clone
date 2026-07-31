@@ -3,17 +3,10 @@ import bcrypt
 import jwt
 from app.core.config import settings
 
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Kullanıcının girdiği düz şifre ile veritabanındaki hash'lenmiş şifreyi karşılaştırır."""
-
-    # HATA YAKALAYICI PRINT SATIRLARI 
-    print("\n" + "=" * 40)
-    print(f"GELEN DUZ SIFRE: {plain_password}")
-    print(f"VERITABANINDAN GELEN HASH: {hashed_password}")
-    print(f"HASH TIPI: {type(hashed_password)}")
-    print(f"HASH UZUNLUGU: {len(str(hashed_password))}")
-    print("=" * 40 + "\n")
 
     password_bytes = plain_password.encode('utf-8')
     hash_bytes = hashed_password.encode('utf-8')
@@ -48,5 +41,19 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     to_encode.update({"exp": expire})
 
     # Token'ı gizli anahtarımızla (SECRET_KEY) imzalıyoruz
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    return encoded_jwt
+
+def create_refresh_token(data: dict, expires_delta: timedelta | None = None)->str:
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+
+    #Token'ın içine bunun bir 'refresh' token olduğunu belirten bir etiket ekliyoruz
+    to_encode.update({"exp": expire, "type": "refresh"})
+
+
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
