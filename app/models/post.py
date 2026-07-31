@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, func
+from sqlalchemy import Column, String, Text, ForeignKey, DateTime, func,Integer
 from sqlalchemy.orm import relationship
 import uuid
 
@@ -45,3 +45,6 @@ class Post(Base):
 
     #Makalenin kapak fotoğrafı yolu
     cover_image = Column(String, nullable=True)
+
+    #makale okunma/görüntülenme sayısı
+    view_count=Column(Integer, default=0)

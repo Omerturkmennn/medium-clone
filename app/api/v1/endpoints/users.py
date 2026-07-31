@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status,Request
 from sqlalchemy.orm import Session
+from app.schemas.stats import UserStatsResponse
+from app.crud import crud_stats, crud_user
 from sqlalchemy import select
 from pydantic import BaseModel
 
@@ -91,3 +93,18 @@ def update_profile(user_in: UserUpdate, db: Session = Depends(get_db), current_u
 
     updated_user=crud_user.update_user(db=db,db_user=current_user,user_in=user_in)
     return updated_user
+
+@router.get("/{username}/stats",response_model=UserStatsResponse)
+def get_user_stats(username: str, db: Session = Depends(get_db)):
+    """
+        Belirli bir yazarın kapsamlı istatistiklerini getirir.
+        Herkese açıktır (Token gerekmez) çünkü profiller herkes tarafından görüntülenebilir.
+        """
+    #kulalnıcı sistemde var mı?
+    user=crud_user.get_user_by_username(db, username=username)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Kullanıcı Bulunamadı")
+
+    #istatistikleri hesapla ve döndür
+    stats=crud_stats.get_user_statistics(db=db,user_id=user.id)
+    return stats

@@ -122,13 +122,24 @@ def get_my_drafts(
 @router.get("/{slug}", response_model=PostResponse)
 def get_post(slug:str, db: Session = Depends(get_db)):
     """
-        Belirli bir makaleyi ID yerine Slug ile getirir.
+        Belirli bir makaleyi ID yerine Slug ile getirir ve görüntülenme sayısını 1 arttırır.
         Örn: /posts/benim-ilk-makalem
         """
     post=crud_post.get_post_by_slug(db=db, slug=slug)
 
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Makale bulunamadı")
+
+    #makale her çağırıldıgında viewCount sayısını 1 arttırır ve kaydeder
+    # EĞER ESKİ BİR MAKALE İSE VE DEĞERİ NONE İSE ÖNCE 0'A EŞİTLE
+    if post.view_count is None:
+        post.view_count = 0
+
+    # SONRA 1 ARTIR
+    post.view_count += 1
+
+    db.commit()
+    db.refresh(post)
 
     return post
 
