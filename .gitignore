@@ -12,3 +12,7 @@ env/
 
 # PyCharm IDE ayar dosyaları
 .idea/
+
+# Logs
+logs/
+*.log

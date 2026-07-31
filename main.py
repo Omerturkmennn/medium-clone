@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI,Request,status
 from fastapi.staticfiles import StaticFiles
 import os
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,6 +7,10 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from app.core.rate_limit import limiter
 
+
+from fastapi.responses import JSONResponse
+import traceback
+from app.core.logger import logger
 
 # Yazdığım endpointleri içeren  importlar
 from app.api.v1.endpoints import users,posts,comments,likes,followers,bookmarks,ws,notifications
@@ -70,3 +74,29 @@ app.include_router(ws.router, prefix="/ws", tags=["websockets"])
 def root():
     """API'nin çalışıp çalışmadığını test etmek için kök dizin"""
     return {"message": "Medium Clone API'ye Hoş Geldiniz!"}
+
+
+# --- GLOBAL EXCEPTION HANDLER ---
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Uygulama genelinde yakalanmayan tüm hataları (500 Internal Server Error) burası yakalar.
+    Kullanıcıya standart bir hata dönerken, arka planda hatanın tüm detaylarını (traceback) dosyaya kaydeder.
+    """
+    # Hatanın detaylı yolunu (traceback) al
+    error_detail = traceback.format_exc()
+
+    # Log dosyasına yaz
+    logger.error(
+        f"Kritik Hata! Endpoint: {request.method} {request.url}\n"
+        f"Hata Mesajı: {str(exc)}\n"
+        f"Detay:\n{error_detail}"
+    )
+
+    # Kullanıcıya (Frontend'e) dönülecek cevap
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "detail": "Sunucu tarafında beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyiniz."
+        }
+    )
