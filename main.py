@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 # Yazdığım endpointleri içeren  importlar
-from app.api.v1.endpoints import users,posts,comments,likes,followers,bookmarks,ws
+from app.api.v1.endpoints import users,posts,comments,likes,followers,bookmarks,ws,notifications
 
 
 app = FastAPI(title="Medium Clone API",
@@ -44,6 +44,7 @@ app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 
 app.include_router(posts.router, prefix="/api/v1/posts", tags=["Posts"])
 
+app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["Notifications"])
 
 app.include_router(comments.router, prefix="/api/v1/comments", tags=["Comments"])
 

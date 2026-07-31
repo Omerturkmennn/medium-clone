@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException,BackgroundTasks
+# CRUD Modülleri
+from app.crud import crud_like, crud_post,crud_notification
 from sqlalchemy.orm import Session
 from typing import List
 from app.websockets.manager import manager
@@ -6,8 +8,7 @@ from app.api.dependencies import get_db, get_current_user
 from app.models.user import User
 from app.schemas.like import LikeResponse
 
-# CRUD Modülleri
-from app.crud import crud_like, crud_post
+
 
 router = APIRouter()
 
@@ -38,6 +39,12 @@ def like_post(
 
     #kendi makalesini beğenmediyse bildirim yolla
     if post.author_id != current_user.id:
+        msg_text="Birisi makaleni beğendi"
+
+        #önce veritabanına kalıcı olarak kaydet
+        crud_notification.create_notification(db=db, user_id=post.author_id, message=msg_text)
+
+        #sonra websocket bildirimini yolla
         notification = {
             "type": "new_like",
             "post_id": post_id,

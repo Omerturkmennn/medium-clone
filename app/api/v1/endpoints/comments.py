@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException,BackgroundTasks
 from sqlalchemy.orm import Session
+from app.crud import crud_comment, crud_post,crud_notification
 from typing import List
 
 from app.api.dependencies import get_db, get_current_user
@@ -7,7 +8,7 @@ from app.models.user import User
 from app.schemas.comment import CommentCreate, CommentResponse, CommentUpdate
 from app.websockets.manager import manager
 
-from app.crud import crud_comment, crud_post
+
 
 router = APIRouter()
 
@@ -36,6 +37,12 @@ def create_comment(
 
     #yorum yapan kişi makale sahibi değilse bildirim gönder
     if post.author_id != current_user.id:
+        msg_text="Makalene yeni bir yorum yapıldı!"
+
+        #önce db ye kalıcı olarak kaydet
+        crud_notification.create_notification(db=db,user_id=post.author_id,message=msg_text)
+
+        #sonra canlı(ws) bildirimini yolla
         notification = {
             "type": "new_comment",
             "post_id": post_id,

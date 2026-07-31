@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from app.models.follow import Follow
 from app.models.tag import Tag
 from app.models.bookmark import Bookmark
+from app.models.notification import Notification
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
