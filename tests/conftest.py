@@ -7,11 +7,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from slowapi.util import get_remote_address
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 
 from main import app
 from app.api.dependencies import get_db
+from app.core.rate_limit import limiter
 from app.database.database import Base
 # Gerçek veritabanını bozmamak için bir SQLite veritabanı,RAM de yaşayan
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -54,3 +56,6 @@ def client(test_db):
     """
     with TestClient(app) as c:
         yield c
+
+
+limiter.enabled = False

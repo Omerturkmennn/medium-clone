@@ -88,6 +88,8 @@ def test_login_user_success(client):
     assert "refresh_token" in data
     assert data["token_type"] == "bearer"
 
+#---------------------------------------------------------------------------------------------------------
+
 def test_refresh_token_success(client):
     """Süresi dolmuş (veya dolmamış) bir access_token'ı refresh_token ile yenilemeyi test eder."""
 
@@ -129,3 +131,56 @@ def test_refresh_token_success(client):
     # ekstra güvenlik: Bize verilen yeni refresh token, eskisi ile aynı olmamalı
     # Çünkü biz "Refresh Token Rotation" yani her defasında anahtar yenileme mantığı kurduk
     assert yeni_data["refresh_token"] != ilk_refresh_token
+
+#----------------------------------------------------------------------------------------------------
+def test_update_profile_success(client):
+    """Giriş yapmış bir kullanıcının kendi profilini başarıyla güncellemesini test eder."""
+
+    # 1. Aşama: Kayıt ol ve Login ol
+    client.post(
+        "/api/v1/users/register",
+        json={"email": "updatetest@example.com", "username": "oldusername", "password": "password123"}
+    )
+    login_response = client.post(
+        "/api/v1/users/login",
+        json={"email": "updatetest@example.com", "password": "password123"}
+    )
+
+    # Token'ı alıyoruz
+    access_token = login_response.json()["access_token"]
+
+    # 2. Aşama: Profil güncelleme isteği at (Token'ı Headers içine koyarak!)
+    update_response = client.put(
+        "/api/v1/users/me",
+        json={"username": "newusername", "bio": "Merhaba ben yeni yazar!"},
+        headers={"Authorization": f"Bearer {access_token}"}  # İŞTE BÜTÜN SIR BURADA!
+    )
+
+    # 3. Aşama: Beklentiler
+    assert update_response.status_code == 200
+    data = update_response.json()
+    assert data["username"] == "newusername"  # Kullanıcı adı değişmiş mi?
+    assert data["email"] == "updatetest@example.com"  # E-posta aynı kalmış mı?
+
+#---------------------------------------------------------------------------------------------------------
+def test_get_user_stats(client):
+    """Bir yazarın istatistiklerinin (herkese açık) başarıyla getirilmesini test eder."""
+
+    # 1. Aşama: Sadece kayıt ol
+    client.post(
+        "/api/v1/users/register",
+        json={"email": "statstest@example.com", "username": "statstest", "password": "password123"}
+    )
+
+    # 2. Aşama: İstatistik endpoint'ine istek at
+    response = client.get("/api/v1/users/statstest/stats")
+
+    # 3. Aşama: Beklentiler
+    assert response.status_code == 200
+    data = response.json()
+
+    # Sunucunun GERÇEKTE döndürdüğü alan isimlerini (keys) kontrol ediyoruz
+    assert "total_articles" in data
+    assert "total_views" in data
+    assert "total_likes" in data
+    assert "trending_posts" in data
