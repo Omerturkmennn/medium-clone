@@ -177,7 +177,7 @@ def update_post(
     return post
 
 #dosya kaydetmek için endpoint
-@router.post("/{post_id}/image}",response_model=PostResponse)
+@router.post("/{post_id}/image",response_model=PostResponse)
 def upload_post_cover_image(
         post_id: str,
         #kullanıcıdan "file" adında dosya bekliyoruz
