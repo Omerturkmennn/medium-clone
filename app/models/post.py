@@ -19,6 +19,9 @@ class Post(Base):
     title = Column(String,nullable=False)
     content = Column(Text,nullable=False)
 
+    tldr = Column(Text, nullable=True)
+
+
     #Foreign key-->yazının kime ait olduğunu tutan ID
     author_id = Column(String, ForeignKey("users.id",ondelete="CASCADE"), nullable=False)
 
@@ -48,3 +51,11 @@ class Post(Base):
 
     #makale okunma/görüntülenme sayısı
     view_count=Column(Integer, default=0)
+
+    @property
+    def like_count(self) -> int:
+        return len(self.likes)
+
+    @property
+    def comment_count(self) -> int:
+        return len(self.comments)

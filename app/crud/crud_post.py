@@ -6,6 +6,7 @@ from app.schemas.post import PostCreate, PostUpdate
 from app.models.tag import Tag
 import re
 import unicodedata
+import uuid
 
 def generate_slug(title: str) -> str:
     """Başlığı SEO dostu bir URL formatına (slug) çevirir."""
@@ -56,9 +57,17 @@ def get_posts(db: Session,skip: int = 0, limit: int = 10,search:str="",tag:str=N
      #Sorguyu çalıştır ve döndür
     return db.scalars(query).all()
 
-def get_post_by_slug(db: Session, slug: str) -> Post:
-    """Makaleyi URL'deki slug'ına göre getirir."""
-    return db.scalar(select(Post).where(Post.slug == slug))
+def get_post_by_slug(db: Session, slug: str) -> Post | None:
+    """Makaleyi URL'deki slug'ına veya gönderilen ID'sine göre akıllıca getirir."""
+    try:
+        # 1. Önce gelen verinin bir ID (UUID) olup olmadığını kontrol et
+        valid_id = uuid.UUID(slug)
+        # Eğer ValueError vermezse bu bir ID'dir. ID'ye göre ara ve döndür:
+        return db.scalar(select(Post).where(Post.id == str(valid_id)))
+    except ValueError:
+        # 2. Eğer UUID'ye çevirirken hata verirse, bu normal bir yazıdır (slug).
+        # O zaman veritabanında slug'a göre ara:
+        return db.scalar(select(Post).where(Post.slug == slug))
 
 
 def create_post(db: Session, post_in: PostCreate, author_id: str) -> Post:
@@ -109,6 +118,8 @@ def update_post(db: Session, db_post: Post, post_in: PostUpdate) -> Post:
         db_post.title = post_in.title
     if post_in.content is not None:
         db_post.content = post_in.content
+    if post_in.status is not None:
+        db_post.status = post_in.status
 
     #tag güncelleme mantığı
     # Eğer kullanıcı 'tags' alanı gönderdiyse (boş liste [] bile gönderse bu if çalışır)

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-
+from app.schemas.user import UserResponse
 
 #Ortak Alanlar (Hem oluştururken hem okurken gereken temel alan)
 class CommentBase(BaseModel):
@@ -19,6 +19,6 @@ class CommentResponse(CommentBase):
     post_id: str
     created_at: datetime
     updated_at: datetime
+    author: UserResponse | None = None
 
-#SQLAlchemy modelini  Pydantic JSON yapısına dönüştürmek için gerekli
-model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)

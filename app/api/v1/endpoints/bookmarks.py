@@ -50,7 +50,7 @@ def unbookmark_post(post_id:str, db:Session = Depends(get_db),current_user:User 
     return None
 
 #kaydedilen makaleleri listeleme
-@router.get("/",response_model=List[BookmarkResponse])
+@router.get("",response_model=List[BookmarkResponse])
 def get_user_bookmarks(db:Session=Depends(get_db),current_user:User = Depends(get_current_user)):
     """
         Giriş yapan kullanıcının okuma listesini (kaydettiği makaleleri) getirir.

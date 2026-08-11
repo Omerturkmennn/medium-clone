@@ -37,10 +37,8 @@ def create_comment(
 
     #yorum yapan kişi makale sahibi değilse bildirim gönder
     if post.author_id != current_user.id:
-        msg_text="Makalene yeni bir yorum yapıldı!"
-
-        #önce db ye kalıcı olarak kaydet
-        crud_notification.create_notification(db=db,user_id=post.author_id,message=msg_text)
+        msg_text=f"{current_user.username} makalenize yorum yaptı: '{comment_in.content[:20]}...'"
+        crud_notification.create_notification(db=db,user_id=post.author_id,message=msg_text, action_url=f"/post/{post.slug or post.id}")
 
         #sonra canlı(ws) bildirimini yolla
         notification = {

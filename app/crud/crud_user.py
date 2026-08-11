@@ -19,6 +19,14 @@ def get_user_by_id(db: Session, user_id: str) -> User | None:
     """Veritabanından ID'ye göre kullanıcı arar."""
     return db.scalar(select(User).where(User.id == user_id))
 
+def search_users(db: Session, query: str, limit: int = 5):
+    """Veritabanında username'e göre benzerlik (ilike) araması yapar."""
+    return db.scalars(
+        select(User)
+        .where(User.username.ilike(f"%{query}%"))
+        .limit(limit)
+    ).all()
+
 
 def create_user(db: Session, user_in: UserCreate) -> User:
     """Yazılan bcrypt fonksiyonunu kullanarak şifreyi hashler ve veritabanına kaydeder."""

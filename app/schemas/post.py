@@ -18,6 +18,8 @@ class PostCreate(BaseModel):
     content: str
     tags:Optional[List[str]] = []
     status: Optional[PostStatus] = PostStatus.draft
+    tldr: Optional[str] = None
+
 
 #yazı güncellenirken başlık veya içerik opsiyonel olabilri
 class PostUpdate(BaseModel):
@@ -26,18 +28,28 @@ class PostUpdate(BaseModel):
     tags: Optional[List[str]] = None
     status: Optional[PostStatus] = None
 
+class PostAuthorResponse(BaseModel):
+    id: str
+    username: str
+    
+    model_config = ConfigDict(from_attributes=True)
+
 # API'den dışarıya (Frontende) yazı bilgilerini gönderirken kullanacağımız şema
 class PostResponse(BaseModel):
     id: str
     slug:Optional[str]=None
     title: str
     content: str
+    tldr: Optional[str] = None
     author_id: str
+    author: Optional[PostAuthorResponse] = None
     status: PostStatus
     created_at: datetime
     updated_at: datetime
     tags: List[TagResponse]=[]
     cover_image:Optional[str]=None
+    like_count: int = 0
+    comment_count: int = 0
 
 
     # Alchemy modelini Pydantice dönüştürmek için gereken ayar

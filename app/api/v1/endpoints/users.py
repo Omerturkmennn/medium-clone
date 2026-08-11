@@ -81,6 +81,15 @@ def login_user(request:Request,user_in: UserLogin, db: Session = Depends(get_db)
         "token_type": "bearer"
     }
 
+
+
+@router.get("/me", response_model=UserResponse)
+def get_my_profile(current_user: User = Depends(get_current_user)):
+    """
+    Giriş yapmış kullanıcının profil bilgilerini getirir.
+    """
+    return current_user
+
 @router.put("/me",response_model=UserResponse)
 def update_profile(user_in: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
@@ -100,19 +109,39 @@ def update_profile(user_in: UserUpdate, db: Session = Depends(get_db), current_u
     updated_user=crud_user.update_user(db=db,db_user=current_user,user_in=user_in)
     return updated_user
 
-@router.get("/{username}/stats",response_model=UserStatsResponse)
-def get_user_stats(username: str, db: Session = Depends(get_db)):
+@router.get("/search", response_model=list[UserResponse])
+def search_users(q: str = "", db: Session = Depends(get_db)):
     """
-        Belirli bir yazarın kapsamlı istatistiklerini getirir.
-        Herkese açıktır (Token gerekmez) çünkü profiller herkes tarafından görüntülenebilir.
-        """
-    #kulalnıcı sistemde var mı?
-    user=crud_user.get_user_by_username(db, username=username)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Kullanıcı Bulunamadı")
+    Kullanıcı adında geçen kelimeye göre arama yapar.
+    """
+    if not q:
+        return []
+    return crud_user.search_users(db, query=q, limit=5)
 
-    #istatistikleri hesapla ve döndür
-    stats=crud_stats.get_user_statistics(db=db,user_id=user.id)
+@router.get("/{user_id}", response_model=UserResponse)
+def get_user_profile(user_id: str, db: Session = Depends(get_db)):
+    """
+    Belirli bir kullanıcının profil bilgilerini getirir.
+    Herkese açıktır (Token gerekmez).
+    """
+    user = crud_user.get_user_by_id(db, user_id=user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kullanıcı Bulunamadı")
+    return user
+
+@router.get("/{user_id}/stats", response_model=UserStatsResponse)
+def get_user_stats(user_id: str, db: Session = Depends(get_db)):
+    """
+    Belirli bir yazarın kapsamlı istatistiklerini getirir.
+    Herkese açıktır (Token gerekmez).
+    """
+    # 1. Kullanıcı ID'ye göre sistemde var mı diye kontrol et
+    user = crud_user.get_user_by_id(db, user_id=user_id) # veya senin crud'daki ID ile arama fonksiyonun
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kullanıcı Bulunamadı")
+
+    # 2. İstatistikleri hesapla ve döndür
+    stats = crud_stats.get_user_statistics(db=db, user_id=user.id)
     return stats
 
 @router.post("/refresh")

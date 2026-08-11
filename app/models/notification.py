@@ -20,6 +20,9 @@ class Notification(Base):
 
     #bildirimin oluşturulma zamanı
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # İlgili makaleye veya profile yönlendirme URL'si
+    action_url = Column(String, nullable=True)
 
     #orm ilişkisi
     user = relationship("User")

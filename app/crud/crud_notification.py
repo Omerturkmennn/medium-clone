@@ -2,12 +2,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from app.models.notification import Notification
 
-def create_notification(db:Session,user_id:str,message:str)->Notification:
+def create_notification(db:Session,user_id:str,message:str, action_url:str=None)->Notification:
     """
         Veritabanına yeni bir bildirim kaydeder.
         Bu fonksiyon arka planda, WebSocket mesajı gönderilmeden hemen önce çalışacak.
         """
-    new_notification = Notification(user_id=user_id,message=message)
+    new_notification = Notification(user_id=user_id,message=message, action_url=action_url)
     db.add(new_notification)
     db.commit()
     db.refresh(new_notification)

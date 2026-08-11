@@ -39,10 +39,8 @@ def like_post(
 
     #kendi makalesini beğenmediyse bildirim yolla
     if post.author_id != current_user.id:
-        msg_text="Birisi makaleni beğendi"
-
-        #önce veritabanına kalıcı olarak kaydet
-        crud_notification.create_notification(db=db, user_id=post.author_id, message=msg_text)
+        msg_text = f"{current_user.username} adlı kullanıcı '{post.title}' başlıklı makalenizi beğendi."
+        crud_notification.create_notification(db=db, user_id=post.author_id, message=msg_text, action_url=f"/post/{post.slug or post.id}")
 
         #sonra websocket bildirimini yolla
         notification = {

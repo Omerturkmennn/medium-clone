@@ -14,5 +14,5 @@ COPY . .
 # 5. Dışarıya açılacak port
 EXPOSE 8000
 
-# 6. Uygulamayı başlatma komutu 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# 6. Uygulamayı başlatma komutu
+CMD ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"]

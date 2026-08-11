@@ -2,20 +2,22 @@ from fastapi import FastAPI,Request,status
 from fastapi.staticfiles import StaticFiles
 import os
 from fastapi.middleware.cors import CORSMiddleware
+from app.database.database import Base,engine
 
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from app.core.rate_limit import limiter
 
+from app.api.v1.endpoints import ai
 
 from fastapi.responses import JSONResponse
 import traceback
 from app.core.logger import logger
 
 # Yazdığım endpointleri içeren  importlar
-from app.api.v1.endpoints import users,posts,comments,likes,followers,bookmarks,ws,notifications
+from app.api.v1.endpoints import users,posts,comments,likes,followers,bookmarks,ws,notifications,tags
 
-
+Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Medium Clone API",
               description="API for medium clone",
               version="1.0.0",)
@@ -26,7 +28,7 @@ origins = [
     "http://localhost:3000", # React, Vue, Next.js vb. için
     "http://localhost:5173", # Vite için
     "http://127.0.0.1:5500", # VS Code Live Server için
-    "*" # Dikkat: Geliştirme aşamasında kolaylık olsun diye tüm adreslere izin veriyoruz. Canlıya alırken bu satırı kaldırılmalı.
+
 ]
 
 app.add_middleware(
@@ -56,6 +58,7 @@ app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 
 app.include_router(posts.router, prefix="/api/v1/posts", tags=["Posts"])
 
+app.include_router(tags.router, prefix="/api/v1/tags", tags=["Tags"])
 app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["Notifications"])
 
 app.include_router(comments.router, prefix="/api/v1/comments", tags=["Comments"])
@@ -64,9 +67,11 @@ app.include_router(likes.router, prefix="/api/v1/likes", tags=["Likes"])
 
 app.include_router(followers.router, prefix="/api/v1/followers", tags=["Followers"])
 
-app.include_router(bookmarks.router, prefix="/bookmarks", tags=["bookmarks"])
+app.include_router(bookmarks.router, prefix="/api/v1/bookmarks", tags=["bookmarks"])
 
 app.include_router(ws.router, prefix="/ws", tags=["websockets"])
+
+app.include_router(ai.router, prefix="/api/v1/ai", tags=["AI"])
 
 
 # API'nin ayakta olup olmadığını kontrol edebilmek için ana dizine basit bir karşılama mesajı
@@ -93,10 +98,13 @@ async def global_exception_handler(request: Request, exc: Exception):
         f"Detay:\n{error_detail}"
     )
 
+    headers = {"Access-Control-Allow-Origin": "http://localhost:5173"}
+
     # Kullanıcıya (Frontend'e) dönülecek cevap
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "detail": "Sunucu tarafında beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyiniz."
-        }
+        },
+        headers=headers
     )

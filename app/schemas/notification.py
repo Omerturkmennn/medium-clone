@@ -7,6 +7,7 @@ class NotificationResponse(BaseModel):
     message:str
     is_read:bool
     created_at:datetime
+    action_url:str | None = None
 
     #Alchemy modelini Pydantice dönüştürme
     model_config = ConfigDict(from_attributes=True)
