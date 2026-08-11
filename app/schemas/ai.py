@@ -16,3 +16,18 @@ class AIResponse(BaseModel):
 class AIImproveRequest(BaseModel):
     content: str = Field(..., description="İyileştirilecek seçili metin")
     mode: str = Field(..., description="İyileştirme modu (grammar, professional, friendly)")
+
+class AIArticleChatRequest(BaseModel):
+    content: str = Field(..., description="Makalenin metin içeriği")
+    user_message: str = Field(..., description="Kullanıcının makale hakkındaki sorusu")
+
+class AITranslationRequest(BaseModel):
+    text: str = Field(..., description="Çevrilecek metin veya HTML içeriği")
+    target_lang: str = Field(..., description="Hedef dil (tr, en)")
+
+class AIImagePromptRequest(BaseModel):
+    title: str = Field(..., description="Makalenin basligi")
+    content: str = Field(..., description="Makalenin icerigi")
+
+class AIDraftRequest(BaseModel):
+    keywords: str = Field(..., description="Makale olusturmak icin anahtar kelimeler")

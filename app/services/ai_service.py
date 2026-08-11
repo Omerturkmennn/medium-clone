@@ -129,3 +129,162 @@ def improve_text(content: str, mode: str) -> dict:
     except Exception as e:
         print(f"AI REST API Hatası (Improve Text): {e}")
         raise HTTPException(status_code=500, detail="Metin iyileştirilirken bir hata oluştu.")
+
+
+def chat_with_article(content: str, user_message: str) -> dict:
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="Yapay Zeka servisi yapılandırılmamış.")
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
+
+    prompt = f"""
+    Sen, aşağıdaki makalenin yazarı tarafından görevlendirilmiş, okuyuculara yardımcı olan akıllı ve kibar bir yapay zeka asistanısın.
+    Görevlerin:
+    - Kullanıcının sorusuna SADECE aşağıdaki makale içeriğine dayanarak cevap ver.
+    - Eğer soru makaleyle alakasızsa (örneğin hava durumu, farklı konular vs.) kibarca "Üzgünüm, ben sadece bu makale içeriği hakkında soruları yanıtlamak için buradayım." de.
+    - Kısa, net, anlaşılır ve bir chat ekranına uygun samimi bir dille cevap ver. (Maksimum 3-4 cümle kullan).
+
+    --- MAKALE İÇERİĞİ ---
+    {content}
+    ----------------------
+
+    Kullanıcının Sorusu: {user_message}
+    Sadece cevabı yaz:
+    """
+
+    data = {"contents": [{"parts": [{"text": prompt}]}]}
+    req = urllib.request.Request(url, data=json.dumps(data).encode("utf-8"),
+                                 headers={"Content-Type": "application/json"})
+
+    try:
+        with urllib.request.urlopen(req) as response:
+            result_data = json.loads(response.read().decode("utf-8"))
+            ai_text = result_data["candidates"][0]["content"]["parts"][0]["text"].strip()
+            return {"reply": ai_text}
+    except Exception as e:
+        print(f"AI REST API Hatası (Chat): {e}")
+        raise HTTPException(status_code=500, detail="Sohbet asistanı şu an yanıt veremiyor.")
+
+
+def translate_text(text: str, target_lang: str) -> dict:
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="Yapay Zeka servisi yapılandırılmamış.")
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
+
+    language = "English" if target_lang == "en" else "Turkish"
+
+    prompt = f"""
+    Sen mükemmel bir profesyonel çevirmensin. 
+    Aşağıdaki metni orijinal dilini algılayıp doğrudan {language} diline çevir.
+
+    ÇOK ÖNEMLİ KURALLAR:
+    - Metnin içinde '|||---|||' şeklinde ayırıcılar (separators) bulunuyor. Bu ayırıcıları KESİNLİKLE çevirme, silme veya yerini değiştirme! Çevrilmiş metni tam olarak aynı yerlerde bu ayırıcılarla birleştirerek geri ver.
+    - Eğer içerikte HTML etiketleri (Örn: <p>, <strong> vb.) varsa KESİNLİKLE bozma. Sadece içindeki metni çevir.
+    - SADECE çevrilmiş metni döndür. "İşte çeviriniz:", "Ayırıcıları korudum" gibi ekstra hiçbir açıklama ekleme.
+
+    Çevrilecek İçerik:
+    {text}
+    """
+
+    data = {"contents": [{"parts": [{"text": prompt}]}]}
+    req = urllib.request.Request(url, data=json.dumps(data).encode("utf-8"),
+                                 headers={"Content-Type": "application/json"})
+
+    try:
+        with urllib.request.urlopen(req) as response:
+            result_data = json.loads(response.read().decode("utf-8"))
+            ai_text = result_data["candidates"][0]["content"]["parts"][0]["text"].strip()
+            if ai_text.startswith("```html") and ai_text.endswith("```"):
+                ai_text = ai_text[7:-3].strip()
+            return {"translated_text": ai_text}
+    except Exception as e:
+        print(f"AI REST API Hatası (Translate): {e}")
+        raise HTTPException(status_code=500, detail="Metin çevrilirken bir hata oluştu veya API sınırına ulaşıldı.")
+
+def generate_draft(keywords: str) -> dict:
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="Yapay Zeka servisi yapılandırılmamış.")
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
+
+    prompt = f"""
+    Sen profesyonel, okuyucuyu icine ceken ve surukleyici bir yazar / icerik ureticisisin.
+    Sana asagida birkac anahtar kelime veya kisa bir konu basligi verecegim. Bu kelimeleri kullanarak zengin, anlasilir ve bilgilendirici bir SEO uyumlu makale / blog yazisi hazirla.
+    Yazin basliklarla (H2, H3), paragraflarla duzenlenmis ve HTML formatinda (sadece <h2>, <h3>, <p>, <ul>, <li>, <strong>) olmalidir.
+    KESINLIKLE markdown (```html vs) KULLANMA, dogrudan metin ve html etiketleri icersin. En sonuna kisa bir sonuc paragrafi ekle.
+
+    Anahtar Kelimeler: {keywords}
+    """
+
+    data = {"contents": [{"parts": [{"text": prompt}]}]}
+    req = urllib.request.Request(url, data=json.dumps(data).encode("utf-8"), headers={"Content-Type": "application/json"})
+
+    try:
+        with urllib.request.urlopen(req) as response:
+            result_data = json.loads(response.read().decode("utf-8"))
+            ai_text = result_data["candidates"][0]["content"]["parts"][0]["text"].strip()
+            if ai_text.startswith("```html") and ai_text.endswith("```"):
+                ai_text = ai_text[7:-3].strip()
+            elif ai_text.startswith("```") and ai_text.endswith("```"):
+                ai_text = ai_text[3:-3].strip()
+            return {"draft": ai_text}
+    except Exception as e:
+        print(f"AI REST API Hatasi (Draft): {e}")
+        raise HTTPException(status_code=500, detail="Makale taslagi uretilirken hata olustu.")
+
+def generate_image_prompt(title: str, content: str) -> dict:
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="Yapay Zeka servisi yapilandirilmamis.")
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
+    
+    prompt = f"""
+    Sen profesyonel bir Prompt (Gorsel Istemi) Muhendisisin.
+    Sana bir makalenin basligini ve icerigini verecegim. Sen bu makaleyi en iyi temsil edecek, etkileyici, yuksek kaliteli bir dijital sanat veya fotograf icin INGILIZCE bir 'Prompt' (Gorsel cizdirme komutu) yazacaksin.
+    Lutfen kisa (maks 3-4 cumle) ama betimleyici olsun. SADECE INGILIZCE PROMPT METNINI ver. Baska hicbir aciklama yapma.
+
+    Baslik: {title}
+    Icerik: {content[:1000]}
+    """
+
+    data = {"contents": [{"parts": [{"text": prompt}]}]}
+    req = urllib.request.Request(url, data=json.dumps(data).encode("utf-8"), headers={"Content-Type": "application/json"})
+
+    try:
+        with urllib.request.urlopen(req) as response:
+            result_data = json.loads(response.read().decode("utf-8"))
+            ai_text = result_data["candidates"][0]["content"]["parts"][0]["text"].strip()
+            return {"image_prompt": ai_text}
+    except Exception as e:
+        print(f"AI REST API Hatasi (Image Prompt): {e}")
+        raise HTTPException(status_code=500, detail="Gorsel istemi uretilirken hata olustu.")
+
+
+def fact_check_article(content: str) -> dict:
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="Yapay Zeka servisi yapılandırılmamış.")
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
+
+    prompt = f"""
+    Sen profesyonel ve tarafsız bir doğruluk kontrolü (Fact-Checker) uzmanısın.
+    Aşağıdaki makaleyi dikkatlice oku. Makalenin içerdiği bilimsel, tarihsel, istatistiksel bilgileri veya iddiaları teyit et.
+    Eğer makalede tamamen doğru, çok iyi aktarılmış bilgiler varsa bunu belirt. Eğer yanlış, eksik veya şüpheli bir bilgi varsa kibar ve yapıcı bir dille okuyucuyu uyar.
+    Sonucu kısa, öz ve birkaç paragraflık akıcı bir Türkçe metin olarak ver. Sadece analiz sonucunu yaz.
+
+    Makale İçeriği: {content[:3000]}
+    """
+
+    data = {"contents": [{"parts": [{"text": prompt}]}]}
+    req = urllib.request.Request(url, data=json.dumps(data).encode("utf-8"),
+                                 headers={"Content-Type": "application/json"})
+
+    try:
+        with urllib.request.urlopen(req) as response:
+            result_data = json.loads(response.read().decode("utf-8"))
+            ai_text = result_data["candidates"][0]["content"]["parts"][0]["text"].strip()
+            return {"fact_check": ai_text}
+    except Exception as e:
+        print(f"AI REST API Hatası (Fact-Check): {e}")
+        raise HTTPException(status_code=500, detail="Doğruluk kontrolü yapılırken bir hata oluştu.")

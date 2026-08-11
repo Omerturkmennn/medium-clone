@@ -91,6 +91,7 @@ def create_post(db: Session, post_in: PostCreate, author_id: str) -> Post:
         author_id=author_id,
         status=post_in.status,
         slug=unique_slug,
+        cover_image=post_in.cover_image,
     )
     #Tag işlemleri
     if post_in.tags:

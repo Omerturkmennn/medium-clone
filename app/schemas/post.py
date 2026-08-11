@@ -19,6 +19,7 @@ class PostCreate(BaseModel):
     tags:Optional[List[str]] = []
     status: Optional[PostStatus] = PostStatus.draft
     tldr: Optional[str] = None
+    cover_image: Optional[str] = None
 
 
 #yazı güncellenirken başlık veya içerik opsiyonel olabilri
@@ -27,6 +28,7 @@ class PostUpdate(BaseModel):
     content: Optional[str] = None
     tags: Optional[List[str]] = None
     status: Optional[PostStatus] = None
+    cover_image: Optional[str] = None
 
 class PostAuthorResponse(BaseModel):
     id: str
