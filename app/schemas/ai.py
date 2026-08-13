@@ -31,3 +31,10 @@ class AIImagePromptRequest(BaseModel):
 
 class AIDraftRequest(BaseModel):
     keywords: str = Field(..., description="Makale olusturmak icin anahtar kelimeler")
+
+class PremiumAudioRequest(BaseModel):
+    post_id: str
+    content: str
+
+class AICommentAnalysisRequest(BaseModel):
+    comments: List[str] = Field(..., description="Analiz edilecek yorumların metin listesi")

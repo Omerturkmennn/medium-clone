@@ -1,5 +1,8 @@
 import os
+os.environ["COQUI_TOS_AGREED"] = "1"  # Coqui TTS lisans sözleşmesini otomatik onayla
 import json
+import torch
+from TTS.api import TTS
 import urllib.request
 from fastapi import HTTPException
 from dotenv import load_dotenv
@@ -288,3 +291,88 @@ def fact_check_article(content: str) -> dict:
     except Exception as e:
         print(f"AI REST API Hatası (Fact-Check): {e}")
         raise HTTPException(status_code=500, detail="Doğruluk kontrolü yapılırken bir hata oluştu.")
+
+
+def analyze_comments(comments: list[str]) -> dict:
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="Yapay Zeka servisi yapılandırılmamış.")
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
+
+    # Yorumları tek bir metinde birleştir
+    comments_text = "\n".join([f"- {c}" for c in comments])
+
+    prompt = f"""
+    Sen profesyonel bir topluluk yöneticisi ve veri analistisin. 
+    Aşağıda bir makaleye yapılmış okur yorumlarının bir listesi bulunuyor.
+    Senden istenenler:
+    1. Yorumları oku ve okuyucuların genel duygu durumunu (olumlu, olumsuz, karışık, heyecanlı vb.) analiz et.
+    2. Okuyucuların en çok hangi noktalara katıldığını veya itiraz ettiğini tespit et.
+    3. Tüm bunları kısa, akıcı ve özzet niteliğinde birkaç paragraflık Türkçe bir metne dönüştür. (Zehirli veya kötü niyetli yorumları sansürlemene gerek yok, sadece genel tabloyu çiz).
+    
+    Lütfen sadece analiz metnini döndür. "İşte analiz:" gibi giriş cümleleri kullanma.
+
+    YORUMLAR:
+    {comments_text[:5000]}
+    """
+
+    data = {"contents": [{"parts": [{"text": prompt}]}]}
+    req = urllib.request.Request(url, data=json.dumps(data).encode("utf-8"),
+                                 headers={"Content-Type": "application/json"})
+
+    try:
+        with urllib.request.urlopen(req) as response:
+            result_data = json.loads(response.read().decode("utf-8"))
+            ai_text = result_data["candidates"][0]["content"]["parts"][0]["text"].strip()
+            return {"analysis": ai_text}
+    except Exception as e:
+        print(f"AI REST API Hatası (Comment Analysis): {e}")
+        raise HTTPException(status_code=500, detail="Yorum analizi yapılırken bir hata oluştu.")
+
+
+# Modeli bellekte tutmak için global değişken
+tts_model = None
+
+
+def get_tts_model():
+    global tts_model
+    if tts_model is None:
+        print("Coqui XTTS v2 Modeli yükleniyor... Bu işlem ilk seferde biraz sürebilir.")
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        # Türkçe destekleyen  XTTS v2 modeli
+        tts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
+    return tts_model
+
+
+def generate_premium_audio(content: str, post_id: str) -> dict:
+    # 1. Sesin kaydedileceği dosya yolu
+    audio_filename = f"audio_{post_id}.wav"
+    audio_path = os.path.join("uploads", audio_filename)
+
+    # 2. Daha önce bu makale için ses üretilmişse, modeli hiç çalıştırmadan direkt dosyayı dön (Cache mantığı)
+    if os.path.exists(audio_path):
+        return {"audio_url": f"/static/{audio_filename}"}
+
+    try:
+        # 3. Modeli yükle
+        model = get_tts_model()
+
+        # 4. Klonlanacak referans ses dosyası
+        speaker_wav = "mazlum_kiper.wav"
+
+        if not os.path.exists(speaker_wav):
+            raise Exception("Referans ses dosyası (mazlum_kiper.wav) bulunamadı!")
+
+        # 5. Modeli çalıştır, sesi üret ve 'uploads' klasörüne kaydet
+        model.tts_to_file(
+            text=content,
+            speaker_wav=speaker_wav,
+            language="tr",
+            file_path=audio_path
+        )
+
+        # Frontend'in çalması için statik URL'yi dön
+        return {"audio_url": f"/static/{audio_filename}"}
+    except Exception as e:
+        print(f"TTS Hatası: {e}")
+        return {"audio_url": None}
