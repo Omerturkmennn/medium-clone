@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends, status, HTTPException,File, UploadFile
+from fastapi import APIRouter, Depends, status, HTTPException,File, UploadFile,BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List,Optional
 import shutil #Dosya kopyalamak için
 import uuid #benzersiz dosya isimleri üretmek için
+import re #html temizlemek için
+from app.services.ai_service import generate_premium_audio
+import html
 
 from app.api.dependencies import get_db, get_current_user
 from app.models.user import User
@@ -19,6 +22,8 @@ def create_post(
         # İstemciden (Postman veya Swagger üzerinden) gelen başlık ve içerik bilgilerini alıyoruz.
         post_in: PostCreate,
 
+        background_tasks: BackgroundTasks,
+
         # Veritabanı ile konuşabilmek için dependencies.py'den oturum (Session) açıyoruz.
         db: Session = Depends(get_db),
 
@@ -32,20 +37,23 @@ def create_post(
         Yeni bir makale oluşturur.
         Yalnızca geçerli bir token'a sahip (giriş yapmış) kullanıcılar bu işlemi yapabilir.
         """
-    # SQLAlchemy kullanarak veritabanına eklenecek yeni makale satırını hazırla
-    # Makalenin yazarını dışarıdan istemiyoruz Sisteme kim giriş yaptıysa
-    # (token kime aitse) o kişinin ID sini otomatik olarak çekip buraya yazıyoruz.
-    # Bu başkasının adına makale yazılmasını engelleyen  bir güvenlik kuralıdır
-
-    # Hazırladığımız nesneyi veritabanı işlem sırasına (RAM e) ekliyoruz.
-    # İşlemi onaylıyor ve veritabanına kalıcı olarak yazıyoruz
-
-    # Veritabanı, makaleyi kaydederken ona otomatik bir benzersiz 'id' ve 'created_at' (tarih) atadı.
-    # refresh() komutu ile bu yeni atanan veritabanı bilgilerini 'new_post' nesnemizin içine geri çekiyoruz
-    # ki return dediğimizde kullanıcı (frontend) bu bilgileri eksiksiz görebilsin.
-
-    # (Yukarıdaki işlemlerin tamamını CRUD fonksiyonuna devrettik)
     new_post = crud_post.create_post(db=db, post_in=post_in, author_id=current_user.id)
+
+    #İçerikteki HTML etiketlerini temizle
+    cleanr = re.compile('<.*?>')
+    cleantext = re.sub(cleanr, ' ', new_post.content)
+
+    #HTML özel karakterlerini normal metne  çevir
+    cleantext = html.unescape(cleantext)
+
+    #Fazladan oluşan yan yana boşlukları tek boşluğa indirge
+    cleantext = " ".join(cleantext.split())
+
+    # Sadece ilk 1000 karakteri al
+    text_to_read = cleantext[:1000]
+    # Arka planda çalışması için görevi kuyruğa ekle
+    background_tasks.add_task(generate_premium_audio, text_to_read, str(new_post.id))
+
 
     return new_post
 

@@ -333,7 +333,6 @@ def analyze_comments(comments: list[str]) -> dict:
 # Modeli bellekte tutmak için global değişken
 tts_model = None
 
-
 def get_tts_model():
     global tts_model
     if tts_model is None:
@@ -343,8 +342,15 @@ def get_tts_model():
         tts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
     return tts_model
 
+import html
 
 def generate_premium_audio(content: str, post_id: str) -> dict:
+    #temizleme adımı
+    content = html.unescape(content)        # HTML kodlarını normal karaktere çevir
+    content = content.replace('\xa0', ' ')  # Gizli n&sp boşluklarını yok et
+    content = " ".join(content.split())     # Yan yana kalmış tüm boşlukları teke düşür
+
+
     # 1. Sesin kaydedileceği dosya yolu
     audio_filename = f"audio_{post_id}.wav"
     audio_path = os.path.join("uploads", audio_filename)

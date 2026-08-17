@@ -60,20 +60,31 @@ class PostResponse(BaseModel):
     #Dinamik okuma süresi hesaplama
     @computed_field
     @property
-
-    def read_time(self)->int:
+    def read_time(self) -> int:
         """
-                Makalenin içeriğindeki kelime sayısını hesaplar ve
-                ortalama okuma hızına (200 kelime/dk) bölerek tahmini süreyi döndürür.
-                """
+        Makalenin içeriğindeki kelime sayısını hesaplar ve
+        ortalama okuma hızına (200 kelime/dk) bölerek tahmini süreyi döndürür.
+        """
         if not self.content:
             return 1
 
+        import re
+        import math
+        import html
+        
+        # 1. HTML kodlarını normal karaktere çevir (Örn: &nbsp; -> boşluk)
+        clean_text = html.unescape(self.content)
+        clean_text = clean_text.replace('\xa0', ' ')
+
+        # 2. HTML etiketlerini boşluğa çevir (Bitişik paragrafları ayırmak için)
+        cleanr = re.compile('<.*?>')
+        clean_text = re.sub(cleanr, ' ', clean_text)
+
         # İçeriği boşluklardan bölerek kelime listesi oluştur ve sayısını al
-        word_count = len(self.content.split())
+        word_count = len(clean_text.split())
 
-        #200 e böl ve en yakın tam sayıya yuvarla
-        minutes=round(word_count/200)
+        # 200'e böl ve her zaman BİR ÜSTE yuvarla (Örn: 205 kelime -> 2 dakika)
+        minutes = math.ceil(word_count / 200)
 
-        #Makale çok kısaysa bile en az 1 dakika okuma süresi dönsün
+        # Makale çok kısaysa bile en az 1 dakika okuma süresi dönsün
         return max(1, minutes)
