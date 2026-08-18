@@ -1,6 +1,8 @@
 import credentials
 from fastapi import APIRouter, Depends, HTTPException, status,Request,Body
 from sqlalchemy.orm import Session
+from sympy.physics.mechanics import body
+
 from app.schemas.stats import UserStatsResponse
 from app.crud import crud_stats, crud_user
 from sqlalchemy import select
@@ -15,6 +17,8 @@ from app.schemas.user import UserCreate, UserResponse,UserUpdate
 from app.core.security import get_password_hash, verify_password, create_access_token
 from app.crud import crud_user
 from app.core.rate_limit import limiter
+from app.models.token_blocklist import TokenBlocklist
+
 
 #Bu router ileride main.py içine eklenecek ve bu dosyadaki tüm endpointleri yönetecek
 router = APIRouter()
@@ -144,6 +148,24 @@ def get_user_stats(user_id: str, db: Session = Depends(get_db)):
     stats = crud_stats.get_user_statistics(db=db, user_id=user.id)
     return stats
 
+@router.post("/logout")
+def logout(refresh_token: str=Body(...,embed=True),db: Session = Depends(get_db)):
+    """
+     Kullanıcının çıkış yapmasını sağlar.
+     Gönderilen refresh token'ı kara listeye alır, böylece çalınsa bile bir daha kullanılamaz.
+     """
+
+    blacklisted_token=db.query(TokenBlocklist).filter(TokenBlocklist.token==refresh_token).first()
+
+    if not blacklisted_token:
+        #blakcliste ekle
+        new_blacklist=TokenBlocklist(token=refresh_token)
+        db.add(new_blacklist)
+
+    return {"message": "Başarıyla çıkış yapıldı ve token iptal edildi."}
+
+
+
 @router.post("/refresh")
 def refresh_access_token(
     refresh_token: str = Body(..., embed=True),
@@ -153,10 +175,14 @@ def refresh_access_token(
         Süresi dolan access_token'ı yenilemek için kullanılır.
         Geçerli bir refresh_token gönderildiğinde yeni bir access_token ve refresh_token döner.
         """
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
+    credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Geçersiz veya süresi dolmuş refresh token",
     )
+
+    is_blacklisted = db.query(TokenBlocklist).filter(TokenBlocklist.token == refresh_token).first()
+    if is_blacklisted:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Bu token iptal edilmiş"
+        )
 
     try:
         #tokeni çöz ve içindeki paylodı al(veriler)

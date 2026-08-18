@@ -57,14 +57,26 @@ def post_fact_check(request: AIRequest):
     """Makalenin içeriğini AI ile doğrular (Fact-Check) ve sonuç döner."""
     return fact_check_article(request.content)
 
-@router.post("/text-to-speech")
-def post_generate_audio(request: PremiumAudioRequest):
-    """Makale metnini alıp Coqui TTS ile referans sesi klonlar ve statik URL döner."""
+from fastapi import BackgroundTasks
 
-    result=generate_premium_audio(request.content,request.post_id)
-    if not result["audio_url"]:
-        raise HTTPException(status_code=500, detail="Ses üretilirken bir hata oluştu.")
-    return result
+@router.post("/text-to-speech")
+def post_generate_audio(request: PremiumAudioRequest, background_tasks: BackgroundTasks):
+    """Makale metnini alıp Coqui TTS ile referans sesi klonlar ve statik URL döner."""
+    import os
+    audio_filename = f"audio_{request.post_id}.wav"
+    audio_path = os.path.join("uploads", audio_filename)
+    
+    # Dosya zaten hazırsa hemen URL'yi dön (Eski sistem gibi çalışır)
+    if os.path.exists(audio_path):
+        return {"audio_url": f"/static/{audio_filename}", "status": "ready"}
+        
+    # Dosya yoksa hiç bekleme yapma, arka plana at ve anında 'hazırlanıyor' mesajı dön.
+    background_tasks.add_task(generate_premium_audio, request.content, request.post_id)
+    return {
+        "audio_url": None, 
+        "status": "processing", 
+        "message": "Ses dosyası şu an yapay zeka tarafından hazırlanıyor. Lütfen 5 dakika sonra tekrar deneyin."
+    }
 
 @router.post("/analyze-comments")
 def post_analyze_comments(request: AICommentAnalysisRequest):

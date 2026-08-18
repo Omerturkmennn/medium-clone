@@ -24,7 +24,7 @@ def create_post(
 
         background_tasks: BackgroundTasks,
 
-        # Veritabanı ile konuşabilmek için dependencies.py'den oturum (Session) açıyoruz.
+        #Veritabanı ile konuşabilmek için dependencies.py den Session aç
         db: Session = Depends(get_db),
 
         # Depends(get_current_user) çalıştığı an, sistem gelen isteğin başlığındaki

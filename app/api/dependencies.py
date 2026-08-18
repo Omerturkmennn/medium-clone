@@ -52,9 +52,14 @@ def get_current_user(
         # Token oluştururken kullanıcının ID'sini "sub" (subject) anahtarına koyacağız.
         # Şimdi o ID'yi geri okuyoruz.
         user_id: str = payload.get("sub")
+        # Tokenın tipini payloaddan al
+        token_type: str = payload.get("type")
 
         if user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Token içinde kullanıcı bilgisi bulunamadı")
+
+        if token_type != "access":
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Geçersiz token tipi. Lütfen access token kullanın.")
 
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Token kullanım süresi dolmuş,tekrar giriş yapınız")

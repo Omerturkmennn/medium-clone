@@ -21,8 +21,8 @@ def generate_title_and_tags(content: str) -> dict:
         print("UYARI: GEMINI_API_KEY bulunamadı!")
         raise HTTPException(status_code=500, detail="Yapay Zeka servisi yapılandırılmamış.")
 
-    # Google'ın Resmi REST API adresi (gemini-flash-latest modeli)
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
+    # Google'ın Resmi REST API adresi (gemini-3.6-flash modeli)
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
 
     prompt = f"""
     Sen profesyonel bir Medium içerik editörüsün. Aşağıdaki makale içeriğini oku ve bu makale için en uygun, ilgi çekici 1 adet başlık ve 5 adet etiket öner.
@@ -74,7 +74,7 @@ def generate_tldr_summary(content: str) -> dict:
     if not GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="Yapay Zeka servisi yapılandırılmamış.")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
     prompt = f"""
     Aşağıdaki makale içeriğini oku ve en fazla 5 maddeden oluşan çok kısa ve öz bir 'Özet' çıkar. 
     Lütfen düz metin olarak ver, maddelerin başına veya sonuna KESİNLİKLE emoji EKLEME. Sadece sade metin kullan.
@@ -100,7 +100,7 @@ def improve_text(content: str, mode: str) -> dict:
     if not GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="Yapay Zeka servisi yapılandırılmamış.")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
 
     # Moda göre yapay zekaya verilecek talimatı seçiyoruz
     if mode == "grammar":
@@ -138,7 +138,7 @@ def chat_with_article(content: str, user_message: str) -> dict:
     if not GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="Yapay Zeka servisi yapılandırılmamış.")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
 
     prompt = f"""
     Sen, aşağıdaki makalenin yazarı tarafından görevlendirilmiş, okuyuculara yardımcı olan akıllı ve kibar bir yapay zeka asistanısın.
@@ -173,7 +173,7 @@ def translate_text(text: str, target_lang: str) -> dict:
     if not GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="Yapay Zeka servisi yapılandırılmamış.")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
 
     language = "English" if target_lang == "en" else "Turkish"
 
@@ -209,7 +209,7 @@ def generate_draft(keywords: str) -> dict:
     if not GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="Yapay Zeka servisi yapılandırılmamış.")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
 
     prompt = f"""
     Sen profesyonel, okuyucuyu icine ceken ve surukleyici bir yazar / icerik ureticisisin.
@@ -240,7 +240,7 @@ def generate_image_prompt(title: str, content: str) -> dict:
     if not GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="Yapay Zeka servisi yapilandirilmamis.")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
     
     prompt = f"""
     Sen profesyonel bir Prompt (Gorsel Istemi) Muhendisisin.
@@ -268,7 +268,7 @@ def fact_check_article(content: str) -> dict:
     if not GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="Yapay Zeka servisi yapılandırılmamış.")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
 
     prompt = f"""
     Sen profesyonel ve tarafsız bir doğruluk kontrolü (Fact-Checker) uzmanısın.
@@ -297,7 +297,7 @@ def analyze_comments(comments: list[str]) -> dict:
     if not GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="Yapay Zeka servisi yapılandırılmamış.")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
 
     # Yorumları tek bir metinde birleştir
     comments_text = "\n".join([f"- {c}" for c in comments])
@@ -336,7 +336,7 @@ tts_model = None
 def get_tts_model():
     global tts_model
     if tts_model is None:
-        print("Coqui XTTS v2 Modeli yükleniyor... Bu işlem ilk seferde biraz sürebilir.")
+        print("Coqui XTTS v2 Modeli yükleniyor...")
         device = "cuda" if torch.cuda.is_available() else "cpu"
         # Türkçe destekleyen  XTTS v2 modeli
         tts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
@@ -351,7 +351,7 @@ def generate_premium_audio(content: str, post_id: str) -> dict:
     content = " ".join(content.split())     # Yan yana kalmış tüm boşlukları teke düşür
 
 
-    # 1. Sesin kaydedileceği dosya yolu
+    #Sesin kaydedileceği dosya yolu
     audio_filename = f"audio_{post_id}.wav"
     audio_path = os.path.join("uploads", audio_filename)
 
@@ -367,7 +367,7 @@ def generate_premium_audio(content: str, post_id: str) -> dict:
         speaker_wav = "mazlum_kiper.wav"
 
         if not os.path.exists(speaker_wav):
-            raise Exception("Referans ses dosyası (mazlum_kiper.wav) bulunamadı!")
+            raise Exception("Referans ses dosyası  bulunamadı!")
 
         # 5. Modeli çalıştır, sesi üret ve 'uploads' klasörüne kaydet
         model.tts_to_file(
