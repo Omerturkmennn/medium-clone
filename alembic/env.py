@@ -7,6 +7,8 @@ from app.models.tag import Tag
 from app.models.bookmark import Bookmark
 from app.models.notification import Notification
 from app.models.token_blocklist import TokenBlocklist
+from app.models.conversation import Conversation
+from app.models.message import Message
 
 
 from sqlalchemy import engine_from_config

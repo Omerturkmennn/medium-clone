@@ -15,7 +15,7 @@ import traceback
 from app.core.logger import logger
 
 # Yazdığım endpointleri içeren  importlar
-from app.api.v1.endpoints import users,posts,comments,likes,followers,bookmarks,ws,notifications,tags
+from app.api.v1.endpoints import users,posts,comments,likes,followers,bookmarks,ws,notifications,tags,messages,conversations
 
 Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Medium Clone API",
@@ -72,6 +72,10 @@ app.include_router(bookmarks.router, prefix="/api/v1/bookmarks", tags=["bookmark
 app.include_router(ws.router, prefix="/ws", tags=["websockets"])
 
 app.include_router(ai.router, prefix="/api/v1/ai", tags=["AI"])
+
+app.include_router(messages.router, prefix="/api/v1/messages", tags=["Messages"])
+
+app.include_router(conversations.router, prefix="/api/v1/conversations", tags=["Conversations"])
 
 
 # API'nin ayakta olup olmadığını kontrol edebilmek için ana dizine basit bir karşılama mesajı

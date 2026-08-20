@@ -1,5 +1,7 @@
 from typing import Generator
-from fastapi import Depends, HTTPException, status
+
+from aiohttp import payload
+from fastapi import Depends, HTTPException, status,Query,WebSocketException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -81,3 +83,30 @@ def get_current_user(
 
     # Tüm kontrollerden başarıyla geçti, kullanıcı nesnesini endpoint'e gönderiyoruz.
     return user
+
+#WebSocket isteklerinde tokenı Query parametresinden alıp doğrulamak için özel fonksiyon
+def get_current_user_ws(
+        token:str=Query(...),
+        db: Session = Depends(get_db)
+)->User:
+    try:
+        #tokeni çöz
+        payload=jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        user_id: str = payload.get("sub")
+        token_type: str = payload.get("type")
+
+        #eğer geçersiz ise ws kapatma hatası yolla
+        if user_id is None or token_type != "access":
+            raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
+
+    # ExpiredSignatureError veya InvalidTokenError durumunda
+    except jwt.PyJWTError:
+        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
+
+    #db de kullanıcı var mı kontrol
+    user=db.scalar(select(User).where(User.id == user_id))
+    if user is None:
+        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
+
+    return user
+

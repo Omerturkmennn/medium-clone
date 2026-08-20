@@ -161,6 +161,7 @@ def logout(refresh_token: str=Body(...,embed=True),db: Session = Depends(get_db)
         #blakcliste ekle
         new_blacklist=TokenBlocklist(token=refresh_token)
         db.add(new_blacklist)
+        db.commit()
 
     return {"message": "Başarıyla çıkış yapıldı ve token iptal edildi."}
 
